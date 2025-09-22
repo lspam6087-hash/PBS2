@@ -13,12 +13,14 @@ void set_parameters(struct Parameters *p_parameters)
   p_parameters->mass = 1.0;                                 //mass of a particle
   p_parameters->epsilon = 1.0;                              //LJ interaction strength
   p_parameters->sigma = 1.0;                                //LJ particle diameter
+  p_parameters->density = 900;                              //density of the system
 
 // The parameters below control core functionalities of the code, but many values will need to be changed
   p_parameters->num_part = 2000;                            //number of particles
   p_parameters->num_dt_steps = 2000;                        //number of time steps
   p_parameters->exclude_12_nb = 1;                          // 1-2 connected atoms exluded from non-bonded interactions 
   p_parameters->exclude_13_nb = 1;                          // 1-3 connected atoms exluded from non-bonded interactions    
+  p_parameters->exclude_14_nb = 1;                          // 1-4 connected atoms exluded from non-bonded interactions    
   p_parameters->dt = 0.01;                                  //integration time step
   p_parameters->L = (struct Vec3D){14.938, 14.938, 14.938}; //box size
     p_parameters->r_cut = 2.5;                              //cut-off distance used for neigbor list

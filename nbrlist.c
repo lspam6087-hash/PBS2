@@ -205,6 +205,7 @@ void build_nbrlist(struct Parameters *p_parameters, struct Vectors *p_vectors, s
     celllist = p_nbrlist->p_celllist->list;
     int excl_12 = p_parameters->exclude_12_nb;
     int excl_13 = p_parameters->exclude_13_nb;
+    int excl_14 = p_parameters->exclude_14_nb;
     for (size_t i = 0; i < num_part; ++i)
     {
         // find neigbors of particle i in its own cell
@@ -213,6 +214,7 @@ void build_nbrlist(struct Parameters *p_parameters, struct Vectors *p_vectors, s
         {
             if (excl_12 && is_connected_12(i,j,p_nbrlist)) continue;
             if (excl_13 && is_connected_13(i,j,p_nbrlist)) continue;
+            if (excl_14 && is_connected_14(i,j,p_nbrlist)) continue;
             rij.x = ri.x - r[j].x;
             rij.y = ri.y - r[j].y;
             rij.z = ri.z - r[j].z;

@@ -193,6 +193,13 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
     sr12 = sr6 * sr6;
     Epot_cutoff = sr12 - sr6;
 
+    // \todo implement this later with the different bond types
+    double epsij;
+    double sigmaij;
+    double r_tot;
+    int CH2 = 1; //True for CH2, false for CH3
+
+
     // Loop through the neighbor list and calculate the forces for each particle pair
     for (size_t k = 0; k < num_nbrs; k++)
     {
@@ -204,6 +211,13 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
         if (rij.sq < r_cutsq)
         {
             /// \todo Make the LJ parameters type-dependent (CH3 and CH2)
+            if (CH2){
+                epsij = 98.0;
+                sigmaij = 3.75;
+            } else {
+                epsij = 98.0;
+                sigmaij = 3.75;
+            }
 
             sr2 = sigmasq / rij.sq;
             sr6 = sr2 * sr2 * sr2;

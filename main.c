@@ -35,6 +35,14 @@
 #include "dynamics.h" 
 #include "memory.h" 
 #include "fileoutput.h" 
+#include "setparameters.c" 
+#include "initialise.c" 
+#include "nbrlist.c" 
+#include "forces.c" 
+#include "dynamics.c" 
+#include "memory.c" 
+#include "fileoutput.c" 
+#include "random.c"
 
 /** 
  * @brief Main MD simulation code. After initialization, 
