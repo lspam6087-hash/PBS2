@@ -5,7 +5,6 @@
 #include "constants.h"
 #include "structs.h"
 #include "nbrlist.h"
-#include "vec3d.h"
 
 // This function calculates all forces acting on the particles (bonded and non-bonded).
 // It initializes the forces array, then calculates bond-stretch, angle-bend, dihedral-torsion,
@@ -182,11 +181,11 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         rkl.z = rkl.z - L.z * floor(rkl.z / L.z + 0.5);
 
         /// \todo Provide the dihedral-torsion force calculation and assign forces to particles i, j, k, and l
-        Vec3D nj = cross(rij, rkj);
-        Vec3D nk = cross(rkj, rkl);
+        // Vec3D nj = cross(rij, rkj);
+        // Vec3D nk = cross(rkj, rkl);
 
-        Vec3D nj_hat = scl(1/norm(nj), nj);
-        Vec3D nj_hat = scl(1/norm(nk), nk);
+        // Vec3D nj_hat = scl(1/norm(nj), nj);
+        // Vec3D nj_hat = scl(1/norm(nk), nk);
 
     }
 
