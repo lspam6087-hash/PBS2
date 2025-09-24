@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "structs.h"
 #include "nbrlist.h"
+#include "vec3d.h"
 
 // This function calculates all forces acting on the particles (bonded and non-bonded).
 // It initializes the forces array, then calculates bond-stretch, angle-bend, dihedral-torsion,
@@ -56,6 +57,10 @@ double calculate_forces_bond(struct Parameters *p_parameters, struct Vectors *p_
         rij.z = rij.z - L.z * floor(rij.z / L.z + 0.5);
 
         /// \todo Provide the bond force calculation and assign forces to particles i and j
+        double rij_sq = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
+        fi.x = -k_b * (rij_sq - (r0 * r0))*rij.x;
+        fi.y = -k_b * (rij_sq - (r0 * r0))*rij.y;
+        fi.z = -k_b * (rij_sq - (r0 * r0))*rij.z;
 
         f[i].x += fi.x;
         f[i].y += fi.y;
@@ -105,6 +110,18 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         rkj.z = rkj.z - L.z * floor(rkj.z / L.z + 0.5);
 
         /// \todo Provide the angle force calculation and assign forces to particles i, j, and k
+        double r1 = (rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
+        double r2 = (rkj.x*rkj.x + rkj.y*rkj.y + rkj.z*rkj.z);
+        double theta = acos((rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(r1*r2));
+        double prefac = k_theta * (theta - theta0) / (sin(theta));
+
+        fi.x = prefac * ((rkj.x/(r1*r2)) - (cos(theta)*rij.x)/(r1*r1));
+        fi.y = prefac * ((rkj.y/(r1*r2)) - (cos(theta)*rij.y)/(r1*r1));
+        fi.z = prefac * ((rkj.z/(r1*r2)) - (cos(theta)*rij.z)/(r1*r1));
+ 
+        fk.x = prefac * ((rij.x/(r1*r2)) - (cos(theta)*rkj.x)/(r1*r1));
+        fk.y = prefac * ((rij.y/(r1*r2)) - (cos(theta)*rkj.y)/(r1*r1));
+        fk.z = prefac * ((rij.z/(r1*r2)) - (cos(theta)*rkj.z)/(r1*r1));
 
         f[i].x += fi.x;
         f[i].y += fi.y;
@@ -165,6 +182,11 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         rkl.z = rkl.z - L.z * floor(rkl.z / L.z + 0.5);
 
         /// \todo Provide the dihedral-torsion force calculation and assign forces to particles i, j, k, and l
+        Vec3D nj = cross(rij, rkj);
+        Vec3D nk = cross(rkj, rkl);
+
+        Vec3D nj_hat = scl(1/norm(nj), nj);
+        Vec3D nj_hat = scl(1/norm(nk), nk);
 
     }
 
