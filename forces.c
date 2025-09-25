@@ -205,20 +205,9 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
     size_t num_part = p_parameters->num_part;
 
     r_cutsq = p_parameters->r_cut * p_parameters->r_cut;
-    sigmasq = p_parameters->sigma * p_parameters->sigma;
-    double epsilon = p_parameters->epsilon;
-
-    double Epot = 0.0, Epot_cutoff;
-    sr2 = sigmasq / r_cutsq;
-    sr6 = sr2 * sr2 * sr2;
-    sr12 = sr6 * sr6;
-    Epot_cutoff = sr12 - sr6;
-
-    // \todo implement this later with the different bond types
-    double epsij;
-    double sigmaij;
-    double r_tot;
-    int CH2 = 1; //True for CH2, false for CH3
+    double Epot = 0.0;
+    // No calculamos sigmasq ni sr2 globales, sino por par
+    double epsij, sigmaij, Epot_cutoff;
 
 
     // Loop through the neighbor list and calculate the forces for each particle pair
@@ -231,24 +220,27 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
         // Compute forces if the distance is smaller than the cutoff distance
         if (rij.sq < r_cutsq)
         {
-            /// \todo Make the LJ parameters type-dependent (CH3 and CH2)
-            if (CH2){
-                epsij = 98.0;
-                sigmaij = 3.75;
-            } else {
-                epsij = 98.0;
-                sigmaij = 3.75;
-            }
-
+            // For each particle pair, select the Lennard-Jones parameters (epsilon, sigma) based on their types.
+            // The type of each particle is stored in p_vectors->type[]. The program retrieves the epsilon and sigma
+            // values for each type from the parameter arrays (set in setparameters.c), and combines them (here by arithmetic mean)
+            // to obtain the pairwise interaction parameters. This allows the code to handle different particle types (e.g., CH3 and CH2)
+            // with their own LJ parameters in a general and extensible way. // LAURA
+            int type_i = p_vectors->type[i]; // LAURA
+            int type_j = p_vectors->type[j]; // LAURA
+            // Berthelot mixing rule for epsilon (geometric mean)
+            epsij = sqrt(p_parameters->epsilon[type_i] * p_parameters->epsilon[type_j]); // LAURA
+            sigmaij = 0.5 * (p_parameters->sigma[type_i] + p_parameters->sigma[type_j]); // LAURA
+            sigmasq = sigmaij * sigmaij;
             sr2 = sigmasq / rij.sq;
             sr6 = sr2 * sr2 * sr2;
             sr12 = sr6 * sr6;
+            Epot_cutoff = sr12 - sr6;
 
             // Calculate the potential energy
-            Epot += 4.0 * epsilon * (sr12 - sr6 - Epot_cutoff);
+            Epot += 4.0 * epsij * (sr12 - sr6 - Epot_cutoff);
 
             // Compute the force and apply it to both particles
-            fr = 24.0 * epsilon * (2.0 * sr12 - sr6) / rij.sq;  // Force divided by distance
+            fr = 24.0 * epsij * (2.0 * sr12 - sr6) / rij.sq;  // Force divided by distance
             df.x = fr * rij.x;
             df.y = fr * rij.y;
             df.z = fr * rij.z;

@@ -3,6 +3,7 @@
 #include "constants.h"
 #include "memory.h"
 #include "structs.h"
+#include "fileoutput.h"
 
 // Write the particle positions to a pdf file
 // The filename (without extension) is given by p_parameters->filename_pdb.

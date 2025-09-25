@@ -10,9 +10,12 @@ void set_parameters(struct Parameters *p_parameters)
 {
 // The parameters first 5 parameters are only used for demonstration puprposes
   p_parameters->kT = 1.0;                                   //thermal energy
-  p_parameters->mass = 1.0;                                 //mass of a particle
-  p_parameters->epsilon = 1.0;                              //LJ interaction strength
-  p_parameters->sigma = 1.0;                                //LJ particle diameter
+  p_parameters->mass[TYPE_CH3] = 1.0;
+  p_parameters->mass[TYPE_CH2] = 1.0;                                //mass of a particle
+  p_parameters->epsilon[TYPE_CH3] = 1.0;
+  p_parameters->epsilon[TYPE_CH2] = 1.0;
+  p_parameters->sigma[TYPE_CH3] = 1.0;
+  p_parameters->sigma[TYPE_CH2] = 1.0;                                //LJ particle diameter
   p_parameters->density = 900;                              //density of the system
 
 // The parameters below control core functionalities of the code, but many values will need to be changed
