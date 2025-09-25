@@ -11,9 +11,14 @@
 // later to initialize different types (e.g., methane and ethane in a binary mixture).
 void initialise_types(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
-    /// \todo Initialize particle types in the vectors.type array
-    for (size_t i = 0; i < p_parameters->num_part; i++)
-        p_vectors->type[i] = 0; // Specify particle type (currently only one type)
+    /// \todo (done) Initialize particle types in the vectors.type array
+    for (size_t i = 0; i < p_parameters->num_part; i+=4)
+    {
+        p_vectors->type[i]   = 0; // Specify particle type (currently only one type)
+        p_vectors->type[i+1] = 1; // Specify particle type (currently only one type)
+        p_vectors->type[i+2] = 1; // Specify particle type (currently only one type)
+        p_vectors->type[i+3] = 0; // Specify particle type (currently only one type)
+    }
 }
 
 // This function initializes the bond connectivity between particles.
@@ -21,11 +26,11 @@ void initialise_types(struct Parameters *p_parameters, struct Vectors *p_vectors
 // This will be important for handling bonded interactions in the simulation.
 void initialise_bond_connectivity(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
-    size_t num_bonds = 0;  // Currently, no bonds are set up.
+    size_t num_bonds = p_parameters->num_part/4*3;  //amount of bonds in the system.
     struct Bond *bonds = (struct Bond *)malloc(num_bonds * sizeof(struct Bond));
 
     /// \todo Specify bonds between particles, i.e., bonds[i].i and bonds[i].j for bonded particle pairs.
-
+    
     p_vectors->num_bonds = num_bonds;
     p_vectors->bonds = bonds;
 }

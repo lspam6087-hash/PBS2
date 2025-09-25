@@ -31,6 +31,13 @@ double update_velocities_half_dt(struct Parameters *p_parameters, struct Nbrlist
 void boundary_conditions(struct Parameters *p_parameters, struct Vectors *p_vectors);
 
 /**
+ * @brief Calculating the measured temperature
+ * @param[in] p_parameters parameters for the thermostat
+ * @param[in] Ekin current kinetic energy
+ */
+double calc_temp(struct Parameters *p_parameters, double Ekin);
+
+/**
  * @brief Apply thermostat by manipulating particle velocities
  * @param[in] p_parameters parameters for the thermostat
  * @param[in, out] p_vectors used members: v

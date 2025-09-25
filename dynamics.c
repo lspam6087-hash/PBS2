@@ -89,6 +89,15 @@ void boundary_conditions(struct Parameters *p_parameters, struct Vectors *p_vect
     }
 }
 
+double calc_temp(struct Parameters *p_parameters, double Ekin)
+{
+    double N = p_parameters->num_part;
+    double d = 3; //Number of degrees of freedom
+    double N_free = d * (N - 1);
+    double T_meas = (2 * Ekin) / (N_free);
+    return T_meas;
+}
+
 // This function applies a thermostat to maintain the system's temperature.
 void thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin)
 /// \todo Change velocities by thermostatting
