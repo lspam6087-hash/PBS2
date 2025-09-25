@@ -25,12 +25,22 @@ void initialise_types(struct Parameters *p_parameters, struct Vectors *p_vectors
 /// \todo Students need to specify bonds between pairs of particles, which are stored as bond[i].i and bond[i].j.
 // This will be important for handling bonded interactions in the simulation.
 void initialise_bond_connectivity(struct Parameters *p_parameters, struct Vectors *p_vectors)
-{
-    size_t num_bonds = p_parameters->num_part/4*3;  //amount of bonds in the system.
+{  
+    size_t N = p_parameters->num_part;
+    size_t num_bonds = 0;  //amount of bonds in the system.
     struct Bond *bonds = (struct Bond *)malloc(num_bonds * sizeof(struct Bond));
 
     /// \todo Specify bonds between particles, i.e., bonds[i].i and bonds[i].j for bonded particle pairs.
-    
+    for (size_t i = 0; i < N; i++){
+        bonds[i].i = 0;
+        bonds[i].j = 0;
+        if ((i % 4) != 3) {
+            // Bond inside each group of four
+            bonds[i].i = i;
+            bonds[i].j = i + 1;
+            num_bonds++;
+        }
+    }
     p_vectors->num_bonds = num_bonds;
     p_vectors->bonds = bonds;
 }
