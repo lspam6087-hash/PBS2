@@ -58,7 +58,7 @@ int main(void)
     struct Parameters parameters; 
     struct Nbrlist nbrlist; 
     size_t step; 
-    double Ekin, Epot, time; 
+    double Ekin, Epot, time, T_meas; 
 
     // Step 1: Set the simulation parameters from input files
     set_parameters(&parameters); 
@@ -119,6 +119,8 @@ int main(void)
         // Final velocity update (half-step)
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
 
+        T_meas = calc_temp(&parameters, Ekin);
+
         // Output system state every 'num_dt_pdb' steps
         if (step % parameters.num_dt_pdb == 0) 
             record_trajectories_pdb(0, &parameters, &vectors, time); 
@@ -131,7 +133,7 @@ int main(void)
 
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
-        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin);
+        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f, Temp %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
     } 
 
     // Save final state
