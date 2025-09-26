@@ -205,20 +205,9 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
     size_t num_part = p_parameters->num_part;
 
     r_cutsq = p_parameters->r_cut * p_parameters->r_cut;
-    sigmasq = p_parameters->sigma * p_parameters->sigma;
-    double epsilon = p_parameters->epsilon;
-
-    double Epot = 0.0, Epot_cutoff;
-    sr2 = sigmasq / r_cutsq;
-    sr6 = sr2 * sr2 * sr2;
-    sr12 = sr6 * sr6;
-    Epot_cutoff = sr12 - sr6;
-
-    // \todo implement this later with the different bond types
-    double epsij;
-    double sigmaij;
-    double r_tot;
-    int CH2 = 1; //True for CH2, false for CH3
+    double Epot = 0.0;
+    // No calculamos sigmasq ni sr2 globales, sino por par
+    double epsij, sigmaij, Epot_cutoff;
 
 
     // Loop through the neighbor list and calculate the forces for each particle pair
