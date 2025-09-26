@@ -35,4 +35,7 @@ void save_restart(struct Parameters *p_parameters, struct Vectors *p_vectors);
  */
 void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors);
 
+void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double time,
+                            double kin_energy, double pot_energy, double temperature);
+
 #endif /* FILEOUTPUT_H_ */

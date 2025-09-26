@@ -134,6 +134,10 @@ int main(void)
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
         printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f, Temp %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
+
+        // NEW: write diagnostics to CSV file
+        record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
+                       Ekin, Epot, T_meas); 
     } 
 
     // Save final state

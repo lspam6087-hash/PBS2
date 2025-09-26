@@ -96,3 +96,24 @@ void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors)
   fread(p_vectors->f, sz, 1, p_file);
   fclose(p_file);
 }
+
+// Write diagnostic data (energies, temperature) to CSV file LAURA B1
+void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double time,
+                            double kin_energy, double pot_energy, double temperature)
+{
+    FILE *fp_diag;
+    char filename[1024];
+    snprintf(filename, 1024, "%s%s", p_parameters->filename_diag, ".csv");
+
+    if (reset == 1) {
+        fp_diag = fopen(filename, "w");
+        fprintf(fp_diag, "time,kinetic_energy,potential_energy,total_energy,temperature\n");
+    } else {
+        fp_diag = fopen(filename, "a");
+    }
+
+    fprintf(fp_diag, "%f,%f,%f,%f,%f\n",
+            time, kin_energy, pot_energy, kin_energy + pot_energy, temperature);
+
+    fclose(fp_diag);
+}

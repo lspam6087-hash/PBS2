@@ -40,6 +40,7 @@ struct Parameters
     size_t num_dt_restart;   //!< Number of time steps between saves of restart file
     char restart_in_filename[1024];  //!< filename for loaded restart file
     char restart_out_filename[1024]; //!< filename for saved restart file
+    char filename_diag[256];   //!< base filename for diagnostics CSV output LAURA B1
 };
 
 /**

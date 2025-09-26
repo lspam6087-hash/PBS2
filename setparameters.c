@@ -35,6 +35,7 @@ void set_parameters(struct Parameters *p_parameters)
   strcpy(p_parameters->restart_in_filename, "restart.dat"); //filename for loaded restart file
   p_parameters->num_dt_restart = 1000;                      // number of time steps between saves
   strcpy(p_parameters->restart_out_filename, "restart.dat");//filename for saved restart file
+  strcpy(p_parameters->filename_diag, "diagnostics"); // filename (without extension) for diagnostics CSV LAURA B1
 
 
   if (p_parameters->r_cut > p_parameters->L.x / 2.0)
