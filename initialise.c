@@ -12,8 +12,24 @@
 void initialise_types(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
     /// \todo Initialize particle types in the vectors.type array
+    // Start with a default assignment (all type 0 = CH3 for now)
     for (size_t i = 0; i < p_parameters->num_part; i++)
-        p_vectors->type[i] = 0; // Specify particle type (currently only one type)
+        p_vectors->type[i] = TYPE_CH3; // default
+
+    // Now refine: Each n-butane molecule has 4 spots: [CH3, CH2, CH2, CH3]
+    if (p_parameters->num_part % 4 != 0) {
+        fprintf(stderr, "initialise_types: num_part must be multiple of 4 for n-butane UA.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t nmol = p_parameters->num_part / 4;
+    for (size_t m = 0; m < nmol; ++m) {
+        size_t i0 = 4 * m;
+        p_vectors->type[i0 + 0] = TYPE_CH3; // CH3
+        p_vectors->type[i0 + 1] = TYPE_CH2; // CH2
+        p_vectors->type[i0 + 2] = TYPE_CH2; // CH2
+        p_vectors->type[i0 + 3] = TYPE_CH3; // CH3
+    }
 }
 
 // This function initializes the bond connectivity between particles.
@@ -221,12 +237,13 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
 // The total momentum is also removed to ensure zero total momentum (important for stability).
 void initialise_velocities(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
-    double sqrtktm = sqrt(p_parameters->kT / p_parameters->mass);
     struct Vec3D sumv = {0.0, 0.0, 0.0};  // Total velocity (to remove later)
 
-    // Assign random velocities to each particle
+    // Asignar velocidades según la masa de cada tipo
     for (size_t i = 0; i < p_parameters->num_part; i++)
     {
+        int tipo = p_vectors->type[i];
+        double sqrtktm = sqrt(p_parameters->kT / p_parameters->mass[tipo]);
         p_vectors->v[i].x = sqrtktm * gauss();
         p_vectors->v[i].y = sqrtktm * gauss();
         p_vectors->v[i].z = sqrtktm * gauss();
@@ -245,4 +262,11 @@ void initialise_velocities(struct Parameters *p_parameters, struct Vectors *p_ve
         p_vectors->v[i].y -= sumv.y;
         p_vectors->v[i].z -= sumv.z;
     }
+    // Comprobación: contar y mostrar cuántos CH3 y CH2 hay
+    int count_ch3 = 0, count_ch2 = 0;
+    for (size_t i = 0; i < p_parameters->num_part; ++i) {
+        if (p_vectors->type[i] == TYPE_CH3) count_ch3++;
+        else if (p_vectors->type[i] == TYPE_CH2) count_ch2++;
+    }
+    printf("[DEBUG] CH3: %d, CH2: %d\n", count_ch3, count_ch2);
 }

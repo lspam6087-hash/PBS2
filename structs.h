@@ -26,9 +26,9 @@ struct Parameters
     int exclude_13_nb;       //!< If true (=1) 1-3 connected atoms are exluded from non-bonded interactions    
     int exclude_14_nb;       //!< If true (=1) 1-4 connected atoms are exluded from non-bonded interactions    
     double kT;               //!< Thermal energy
-    double mass;             //!< Mass of a particle
-    double epsilon;          //!< LJ interaction strength
-    double sigma;            //!< LJ particle diameter
+    double mass[2];          //!< Mass for each pseudomatom type: [CH3, CH2] LAURA
+    double epsilon[2];       //!< LJ interaction strength for each type
+    double sigma[2];         //!< LJ particle diameter for each type
     double density;          //!< Density of the system
     double r_cut;            //!< Cut-off distance for LJ interaction
     double r_shell;          //!< Shell thickness for neighbor list
@@ -103,13 +103,19 @@ struct Pair
  * @brief Struct with pointers to all particle arrays relevant for a MD simulation
  * 
  */
+// Enum para los tipos de pseudomátomos
+typedef enum {
+    TYPE_CH3 = 0,
+    TYPE_CH2 = 1
+} PseudoatomType;
+
 struct Vectors
 {
     size_t size;                //!< size of particle arrays (can be > num_part)
     size_t num_bonds;           //!< number of bonds
     size_t num_angles;          //!< number of angles 
     size_t num_dihedrals;       //!< number of dihedrals
-    int    *type;               //!< type
+    int *type;                  //!< LAURA: type of pseudoatom (CH3/CH2)
     struct Vec3D *r;            //!< positions
     struct Vec3D *dr;           //!< displacements
     struct Vec3D *v;            //!< velocities
