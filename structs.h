@@ -4,6 +4,40 @@
 /* This header file contains definitions of struct types used in the molecular dynamics code */
 
 /**
+ * @file structs.h
+ * @brief Defines the core data structures used in the molecular dynamics simulation.
+ *
+ * This header provides type definitions (structs) that organize and store both
+ * simulation parameters and dynamic particle data:
+ *
+ * - struct Vec3D:
+ *   Represents a 3D vector with x, y, z components.
+ *   Used for particle positions, velocities, and forces.
+ *
+ * - struct Parameters:
+ *   Contains global simulation parameters such as:
+ *     • number of particles
+ *     • number of time steps
+ *     • integration time step (dt)
+ *     • simulation box dimensions
+ *     • file names for output (PDB, XYZ, restart, diagnostics, ...)
+ *   These values define how the simulation runs and how data is saved.
+ *
+ * - struct Vectors:
+ *   Holds arrays of particle data:
+ *     • r[] : positions
+ *     • v[] : velocities
+ *     • f[] : forces
+ *   These are updated at every time step and represent the current state
+ *   of the simulated system.
+ *
+ * In summary, structs.h provides the central data structures that link
+ * together the simulation code: Parameters define the setup, while Vectors
+ * store the evolving system state.
+ */
+
+
+/**
  * @brief Struct to store x, y, and z component of a 3D vector.
  * 
  */
@@ -23,13 +57,12 @@ struct Parameters
     double dt;               //!< integration time step
     struct Vec3D L;          //!< Box sizes in 3 direction
     int exclude_12_nb;       //!< If true (=1) 1-2 connected atoms are exluded from non-bonded interactions 
-    int exclude_13_nb;       //!< If true (=1) 1-3 connected atoms are exluded from non-bonded interactions    
+    int exclude_13_nb;       //!< If true (-1) 1-3 connected atoms are exluded from non-bonded interactions 
     int exclude_14_nb;       //!< If true (=1) 1-4 connected atoms are exluded from non-bonded interactions    
     double kT;               //!< Thermal energy
-    double mass[2];          //!< Mass for each pseudomatom type: [CH3, CH2] LAURA
-    double epsilon[2];       //!< LJ interaction strength for each type
-    double sigma[2];         //!< LJ particle diameter for each type
-    double density;          //!< Density of the system
+    double mass[2];          //!< Mass per type: [0] = CH3, [1] = CH2
+    double sigma[2];         //!< σ per type (Å)
+    double epsilon[2];       //!< ε per type (K, dividido ya por kB)
     double r_cut;            //!< Cut-off distance for LJ interaction
     double r_shell;          //!< Shell thickness for neighbor list
     size_t num_dt_pdb;       //!< Number of time steps between pdb saves
@@ -37,10 +70,10 @@ struct Parameters
     char filename_pdb[1024]; //!< filename (without extension) for pdb file
     char filename_xyz[1024]; //!< filename (without extension) for pdb file
     char load_restart;       //!< if equal 1 restart file is loaded
+    char filename_diag[256];   //!< base filename for diagnostics CSV output LAURA B1
     size_t num_dt_restart;   //!< Number of time steps between saves of restart file
     char restart_in_filename[1024];  //!< filename for loaded restart file
     char restart_out_filename[1024]; //!< filename for saved restart file
-    char filename_diag[256];   //!< base filename for diagnostics CSV output LAURA B1
 };
 
 /**
@@ -104,19 +137,12 @@ struct Pair
  * @brief Struct with pointers to all particle arrays relevant for a MD simulation
  * 
  */
-// Enum para los tipos de pseudomátomos
-typedef enum {
-    TYPE_CH3 = 0,
-    TYPE_CH2 = 1
-} PseudoatomType;
-
 struct Vectors
 {
     size_t size;                //!< size of particle arrays (can be > num_part)
     size_t num_bonds;           //!< number of bonds
     size_t num_angles;          //!< number of angles 
     size_t num_dihedrals;       //!< number of dihedrals
-    int *type;                  //!< LAURA: type of pseudoatom (CH3/CH2)
     struct Vec3D *r;            //!< positions
     struct Vec3D *dr;           //!< displacements
     struct Vec3D *v;            //!< velocities
@@ -124,6 +150,7 @@ struct Vectors
     struct Bond *bonds;         //!< bonds
     struct Angle *angles;       //!< angles
     struct Dihedral *dihedrals; //!< dihedrals
+    int *type;         // type of particle [N] (TYPE_CH3 o TYPE_CH2)
 };
 
 /**

@@ -48,19 +48,18 @@ double update_velocities_half_dt(struct Parameters *p_parameters, struct Nbrlist
     double Ekin = 0.0;  // Initialize kinetic energy
     struct Vec3D *v = p_vectors->v;  // Particle velocities
     struct Vec3D *f = p_vectors->f;  // Forces acting on particles
+    int *type = p_vectors->type;     // Tipo de cada partícula
 
-    // Loop over all particles y actualiza sus velocidades usando su masa
+    // Loop over all particles and update their velocities
     for (size_t i = 0; i < p_parameters->num_part; i++)
     {
-        double factor = 0.5 / p_parameters->mass[p_vectors->type[i]] * p_parameters->dt; // LAURA: masa por tipo
+        double factor = 0.5 / p_parameters->mass[type[i]] * p_parameters->dt;  // Factor para cada tipo
         v[i].x += factor * f[i].x;  // Update velocity in x-direction
         v[i].y += factor * f[i].y;  // Update velocity in y-direction
         v[i].z += factor * f[i].z;  // Update velocity in z-direction
-        Ekin += p_parameters->mass[p_vectors->type[i]] * (v[i].x * v[i].x + v[i].y * v[i].y + v[i].z * v[i].z);  // LAURA: masa por tipo
+        Ekin += 0.5 * p_parameters->mass[type[i]] * (v[i].x * v[i].x + v[i].y * v[i].y + v[i].z * v[i].z);  // Kinetic energy
     }
-
-    // Final kinetic usimng specific masses
-    return 0.5 * Ekin;  // (considers each particle)
+    return Ekin;  // Return the system's kinetic energy
 }
 
 // This function applies periodic boundary conditions to ensure particles stay inside the simulation box.
@@ -86,14 +85,37 @@ void boundary_conditions(struct Parameters *p_parameters, struct Vectors *p_vect
     }
 }
 
+
+/**
+ * @brief Calculate the instantaneous temperature from the kinetic energy.
+ *
+ * This function converts the total kinetic energy of the system into an
+ * instantaneous temperature using the equipartition theorem:
+ *
+ *     T = (2 * E_kin) / (kB * N_free)
+ *
+ * where:
+ *   - E_kin  : total kinetic energy (input argument)
+ *   - N_free : number of degrees of freedom = d * (N - 1)
+ *              (d = 3 dimensions, subtract 3 to remove center-of-mass motion)
+ *   - kB     : Boltzmann constant (set to 1 in reduced units)
+ *
+ * @param p_parameters struct containing the number of particles (num_part)
+ * @param Ekin total kinetic energy of the system
+ * @return Instantaneous temperature T_meas
+ */
+
+
+// Calculate instantaneous temperature from kinetic energy LAURA B1
 double calc_temp(struct Parameters *p_parameters, double Ekin)
 {
-    double N = p_parameters->num_part;
-    double d = 3; //Number of degrees of freedom
-    double N_free = d * (N - 1);
-    double T_meas = (2 * Ekin) / (N_free);
+    double N = p_parameters->num_part;     // number of particles
+    double d = 3;                          // number of dimensions
+    double N_free = d * (N - 1);           // degrees of freedom (subtract 3 for CM motion)
+    double T_meas = (2.0 * Ekin) / N_free; // T = 2E_kin / (kB * dof), here kB = 1
     return T_meas;
 }
+
 
 // This function applies a thermostat to maintain the system's temperature.
 void thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin)

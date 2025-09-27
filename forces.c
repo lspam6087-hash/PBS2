@@ -47,7 +47,7 @@ double calculate_forces_bond(struct Parameters *p_parameters, struct Vectors *p_
         size_t i = bonds[q].i;
         size_t j = bonds[q].j;
 
-        // Apply the minimum image convention for calculating distances
+    // Apply the minimum image convention for calculating distances
         rij.x = r[i].x - r[j].x;
         rij.x = rij.x - L.x * floor(rij.x / L.x + 0.5);
         rij.y = r[i].y - r[j].y;
@@ -55,11 +55,7 @@ double calculate_forces_bond(struct Parameters *p_parameters, struct Vectors *p_
         rij.z = r[i].z - r[j].z;
         rij.z = rij.z - L.z * floor(rij.z / L.z + 0.5);
 
-        /// \todo Provide the bond force calculation and assign forces to particles i and j
-        double rij_sq = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
-        fi.x = -k_b * (rij_sq - (r0 * r0))*rij.x;
-        fi.y = -k_b * (rij_sq - (r0 * r0))*rij.y;
-        fi.z = -k_b * (rij_sq - (r0 * r0))*rij.z;
+    /// 	odo Provide the bond force calculation and assign forces to particles i and j
 
         f[i].x += fi.x;
         f[i].y += fi.y;
@@ -93,7 +89,7 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         size_t j = angles[q].j;
         size_t k = angles[q].k;
 
-        // Apply the minimum image convention for calculating distances
+    // Apply the minimum image convention for calculating distances
         rij.x = r[i].x - r[j].x;
         rij.x = rij.x - L.x * floor(rij.x / L.x + 0.5);
         rij.y = r[i].y - r[j].y;
@@ -108,19 +104,7 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         rkj.z = r[k].z - r[j].z;
         rkj.z = rkj.z - L.z * floor(rkj.z / L.z + 0.5);
 
-        /// \todo Provide the angle force calculation and assign forces to particles i, j, and k
-        double r1 = (rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
-        double r2 = (rkj.x*rkj.x + rkj.y*rkj.y + rkj.z*rkj.z);
-        double theta = acos((rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(r1*r2));
-        double prefac = k_theta * (theta - theta0) / (sin(theta));
-
-        fi.x = prefac * ((rkj.x/(r1*r2)) - (cos(theta)*rij.x)/(r1*r1));
-        fi.y = prefac * ((rkj.y/(r1*r2)) - (cos(theta)*rij.y)/(r1*r1));
-        fi.z = prefac * ((rkj.z/(r1*r2)) - (cos(theta)*rij.z)/(r1*r1));
- 
-        fk.x = prefac * ((rij.x/(r1*r2)) - (cos(theta)*rkj.x)/(r1*r1));
-        fk.y = prefac * ((rij.y/(r1*r2)) - (cos(theta)*rkj.y)/(r1*r1));
-        fk.z = prefac * ((rij.z/(r1*r2)) - (cos(theta)*rkj.z)/(r1*r1));
+    /// 	odo Provide the angle force calculation and assign forces to particles i, j, and k
 
         f[i].x += fi.x;
         f[i].y += fi.y;
@@ -158,7 +142,7 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         size_t k = dihedrals[q].k;
         size_t l = dihedrals[q].l;
 
-        // Apply the minimum image convention for calculating distances
+    // Apply the minimum image convention for calculating distances
         rij.x = r[i].x - r[j].x;
         rij.x = rij.x - L.x * floor(rij.x / L.x + 0.5);
         rij.y = r[i].y - r[j].y;
@@ -180,12 +164,7 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         rkl.z = r[l].z - r[k].z;
         rkl.z = rkl.z - L.z * floor(rkl.z / L.z + 0.5);
 
-        /// \todo Provide the dihedral-torsion force calculation and assign forces to particles i, j, k, and l
-        // Vec3D nj = cross(rij, rkj);
-        // Vec3D nk = cross(rkj, rkl);
-
-        // Vec3D nj_hat = scl(1/norm(nj), nj);
-        // Vec3D nj_hat = scl(1/norm(nk), nk);
+    /// 	odo Provide the dihedral-torsion force calculation and assign forces to particles i, j, k, and l
 
     }
 
@@ -205,10 +184,9 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
     size_t num_part = p_parameters->num_part;
 
     r_cutsq = p_parameters->r_cut * p_parameters->r_cut;
-    double Epot = 0.0;
-    // No calculamos sigmasq ni sr2 globales, sino por par
-    double epsij, sigmaij, Epot_cutoff;
-
+    double Epot = 0.0, Epot_cutoff;
+    // The energy shift (Epot_cutoff) will be calculated per pair using sigma_ij (Lorentz-Berthelot mixing rule).
+    // This is correct for mixtures, since each pair can have a different sigma.
 
     // Loop through the neighbor list and calculate the forces for each particle pair
     for (size_t k = 0; k < num_nbrs; k++)
@@ -217,30 +195,34 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
         size_t i = nbr[k].i;
         size_t j = nbr[k].j;
 
-        // Compute forces if the distance is smaller than the cutoff distance
+    // Compute forces if the distance is smaller than the cutoff distance
         if (rij.sq < r_cutsq)
         {
-            // For each particle pair, select the Lennard-Jones parameters (epsilon, sigma) based on their types.
-            // The type of each particle is stored in p_vectors->type[]. The program retrieves the epsilon and sigma
-            // values for each type from the parameter arrays (set in setparameters.c), and combines them (here by arithmetic mean)
-            // to obtain the pairwise interaction parameters. This allows the code to handle different particle types (e.g., CH3 and CH2)
-            // with their own LJ parameters in a general and extensible way. // LAURA
-            int type_i = p_vectors->type[i]; // LAURA
-            int type_j = p_vectors->type[j]; // LAURA
-            // Berthelot mixing rule for epsilon (geometric mean)
-            epsij = sqrt(p_parameters->epsilon[type_i] * p_parameters->epsilon[type_j]); // LAURA
-            sigmaij = 0.5 * (p_parameters->sigma[type_i] + p_parameters->sigma[type_j]); // LAURA
-            sigmasq = sigmaij * sigmaij;
+            // Lorentz-Berthelot mixing rules for sigma and epsilon
+            int tipo_i = p_vectors->type[i];
+            int tipo_j = p_vectors->type[j];
+            double sigma_ij = 0.5 * (p_parameters->sigma[tipo_i] + p_parameters->sigma[tipo_j]);
+            double epsilon_ij = sqrt(p_parameters->epsilon[tipo_i] * p_parameters->epsilon[tipo_j]);
+            sigmasq = sigma_ij * sigma_ij;
+
             sr2 = sigmasq / rij.sq;
             sr6 = sr2 * sr2 * sr2;
             sr12 = sr6 * sr6;
-            Epot_cutoff = sr12 - sr6;
 
+            // --- IMPORTANT: Per-pair energy shift ---
+            // To ensure the truncated potential is continuous in mixtures,
+            // the shift (Epot_cutoff) must be calculated using sigma_ij for each pair.
+            double sr2c  = sigmasq / r_cutsq;
+            double sr6c  = sr2c * sr2c * sr2c;
+            double sr12c = sr6c * sr6c;
+            double Epot_cutoff = sr12c - sr6c;
+
+        
             // Calculate the potential energy
-            Epot += 4.0 * epsij * (sr12 - sr6 - Epot_cutoff);
+            Epot += 4.0 * epsilon_ij * (sr12 - sr6 - Epot_cutoff);
 
             // Compute the force and apply it to both particles
-            fr = 24.0 * epsij * (2.0 * sr12 - sr6) / rij.sq;  // Force divided by distance
+            fr = 24.0 * epsilon_ij * (2.0 * sr12 - sr6) / rij.sq;  // Force divided by distance
             df.x = fr * rij.x;
             df.y = fr * rij.y;
             df.z = fr * rij.z;

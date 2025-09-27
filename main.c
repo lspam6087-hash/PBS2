@@ -36,6 +36,8 @@
 #include "memory.h" 
 #include "fileoutput.h" 
 
+
+
 /** 
  * @brief Main MD simulation code. After initialization, 
  * a velocity-Verlet scheme is executed for a specified number of time steps. 
@@ -59,6 +61,9 @@ int main(void)
     struct Nbrlist nbrlist; 
     size_t step; 
     double Ekin, Epot, time, T_meas; 
+
+
+
 
     // Step 1: Set the simulation parameters from input files
     set_parameters(&parameters); 
@@ -119,6 +124,7 @@ int main(void)
         // Final velocity update (half-step)
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
 
+        // Calculate instantaneous temperature LAURA B1
         T_meas = calc_temp(&parameters, Ekin);
 
         // Output system state every 'num_dt_pdb' steps
@@ -133,12 +139,14 @@ int main(void)
 
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
-        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f, Temp %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
+        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin);
 
         // NEW: write diagnostics to CSV file
         record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
                        Ekin, Epot, T_meas); 
     } 
+
+
 
     // Save final state
     save_restart(&parameters, &vectors); 
