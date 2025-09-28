@@ -31,13 +31,6 @@ double update_velocities_half_dt(struct Parameters *p_parameters, struct Nbrlist
 void boundary_conditions(struct Parameters *p_parameters, struct Vectors *p_vectors);
 
 /**
- * @brief Calculating the measured temperature
- * @param[in] p_parameters parameters for the thermostat
- * @param[in] Ekin current kinetic energy
- */
-double calc_temp(struct Parameters *p_parameters, double Ekin);
-
-/**
  * @brief Apply thermostat by manipulating particle velocities
  * @param[in] p_parameters parameters for the thermostat
  * @param[in, out] p_vectors used members: v
@@ -45,5 +38,22 @@ double calc_temp(struct Parameters *p_parameters, double Ekin);
  * @param[in] T_meas Measured temperature
  */
 double thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin, double T_meas);
+
+/**
+ * @brief Calculate the instantaneous measured temperature from the kinetic energy.
+ *
+ * Converts the total kinetic energy into temperature using the equipartition theorem:
+ * 
+ *     T = (2 * Ekin) / (kB * dof)
+ * 
+ * where:
+ *   - dof = 3 * (N - 1), i.e., subtracting 3 degrees of freedom for the center of mass.
+ *   - kB = 1 in reduced units.
+ *
+ * @param[in] p_parameters pointer to Parameters struct (provides number of particles)
+ * @param[in] Ekin total kinetic energy at this time step
+ * @return Instantaneous temperature (double)
+ */
+double calc_temp(struct Parameters *p_parameters, double Ekin);
 
 #endif /* DYNAMICS_H_ */

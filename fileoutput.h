@@ -35,4 +35,21 @@ void save_restart(struct Parameters *p_parameters, struct Vectors *p_vectors);
  */
 void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors);
 
+/** LAURA
+ * @brief Output diagnostic data (energies, temperature) to a CSV file.
+ * 
+ * Writes one line per timestep containing time, kinetic energy, potential energy,
+ * total energy, and instantaneous temperature.
+ * 
+ * @param reset 1: write new file (and CSV header), 0: append data
+ * @param p_parameters used members: filename_diag
+ * @param time simulation time stamp
+ * @param kin_energy kinetic energy at this step
+ * @param pot_energy potential energy at this step
+ * @param temperature instantaneous temperature at this step
+ */
+void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double time,
+                            double kin_energy, double pot_energy, double temperature);
+
+
 #endif /* FILEOUTPUT_H_ */

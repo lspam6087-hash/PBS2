@@ -1,3 +1,4 @@
+
 /******************************************************************************/ 
 /*                                                                            */
 /*  A Molecular Dynamics simulation of Lennard-Jones particles                */
@@ -35,6 +36,12 @@
 #include "dynamics.h" 
 #include "memory.h" 
 #include "fileoutput.h" 
+#include "tests.h"
+//#define RUN_TEST_NB
+#define RUN_TEST_NVE     // ← activa el test NVE
+
+
+
 
 /** 
  * @brief Main MD simulation code. After initialization, 
@@ -60,11 +67,23 @@ int main(void)
     size_t step; 
     double Ekin, Epot, time, T_meas, T_therm; 
 
+
+
+
     // Step 1: Set the simulation parameters from input files
     set_parameters(&parameters); 
 
     // Step 2: Allocate memory for particles, forces, and neighbor lists
     alloc_memory(&parameters, &vectors, &nbrlist); 
+
+    #ifdef RUN_TEST_NB
+    // Run non-bonded force verification test
+    run_pair_case(0,0, &parameters, &vectors, &nbrlist); // CH3–CH3
+    run_pair_case(0,1, &parameters, &vectors, &nbrlist); // CH3–CH2
+    run_pair_case(1,1, &parameters, &vectors, &nbrlist); // CH2–CH2
+    return 0; // exit program after the test
+#endif
+
 
     // Check if a restart is required
     if (parameters.load_restart == 1) 
@@ -102,7 +121,9 @@ int main(void)
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
 
         /// \todo Implement and apply the Berendsen thermostat to maintain temperature (dynamics.c)
+        #ifndef RUN_TEST_NVE
         thermostat(&parameters, &vectors, Ekin); 
+        #endif
 
         // Update positions
         update_positions(&parameters, &nbrlist, &vectors); 
@@ -119,6 +140,21 @@ int main(void)
         // Final velocity update (half-step)
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
 
+
+#ifdef RUN_TEST_NVE
+static int have_ref = 0;
+static double Etot0 = 0.0;
+double Etot = Epot + Ekin;
+if (!have_ref) { Etot0 = Etot; have_ref = 1; }
+
+if (step % 1000 == 0) {
+    double drift_rel = fabs(Etot - Etot0) / fmax(1.0, fabs(Etot0));
+    printf("[NVE] step %lu  Etot=%.8e  drift_rel=%.3e\n",
+           (unsigned long)step, Etot, drift_rel);
+}
+#endif
+
+        // Calculate instantaneous temperature LAURA B1
         T_meas = calc_temp(&parameters, Ekin);
 
         T_therm = thermostat(&parameters, &vectors, Ekin, T_meas);
@@ -135,8 +171,14 @@ int main(void)
 
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
-        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f, Temp %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
+        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin);
+
+        // NEW: write diagnostics to CSV file
+        record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
+                       Ekin, Epot, T_meas); 
     } 
+
+
 
     // Save final state
     save_restart(&parameters, &vectors); 
@@ -146,3 +188,32 @@ int main(void)
 
     return 0; 
 }
+
+/*
+ * General workflow of the Molecular Dynamics simulation:
+ *
+ * 1. Initialization
+ *    - Read simulation parameters (dt, number of steps, masses, σ, ε, cutoff, etc.).
+ *    - Allocate memory for positions, velocities, forces, and types.
+ *    - Initialize particle positions and velocities (or load from restart).
+ *    - Build the initial neighbor list.
+ *    - Compute the initial forces and potential energy.
+ *
+ * 2. Main simulation loop (repeated every time step)
+ *    a) Update velocities by half a time step using the current forces.
+ *    b) Apply the thermostat (Berendsen) to control the temperature.
+ *    c) Update particle positions by a full time step.
+ *    d) Apply boundary conditions (periodic box).
+ *    e) Update the neighbor list if required.
+ *    f) Recompute forces and potential energy at the new positions.
+ *    g) Complete the second half-step velocity update.
+ *    h) Calculate instantaneous temperature from the kinetic energy.
+ *    i) Output system state (trajectories, diagnostics, restart files).
+ *    j) Print progress information to the screen.
+ *
+ * 3. Finalization
+ *    - Save the final state to a restart file.
+ *    - Free allocated memory.
+ *
+ * In summary: initialization → (velocity-Verlet integration + thermostat + I/O) → finalization.
+ */
