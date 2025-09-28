@@ -42,7 +42,8 @@ double calc_temp(struct Parameters *p_parameters, double Ekin);
  * @param[in] p_parameters parameters for the thermostat
  * @param[in, out] p_vectors used members: v
  * @param[in] Ekin current kinetic energy
+ * @param[in] T_meas Measured temperature
  */
-void thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin);
+double thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin, double T_meas);
 
 #endif /* DYNAMICS_H_ */

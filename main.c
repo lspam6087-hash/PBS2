@@ -58,7 +58,7 @@ int main(void)
     struct Parameters parameters; 
     struct Nbrlist nbrlist; 
     size_t step; 
-    double Ekin, Epot, time, T_meas; 
+    double Ekin, Epot, time, T_meas, T_therm; 
 
     // Step 1: Set the simulation parameters from input files
     set_parameters(&parameters); 
@@ -120,6 +120,8 @@ int main(void)
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
 
         T_meas = calc_temp(&parameters, Ekin);
+
+        T_therm = thermostat(&parameters, &vectors, Ekin, T_meas);
 
         // Output system state every 'num_dt_pdb' steps
         if (step % parameters.num_dt_pdb == 0) 

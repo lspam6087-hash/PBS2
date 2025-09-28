@@ -96,7 +96,25 @@ double calc_temp(struct Parameters *p_parameters, double Ekin)
 }
 
 // This function applies a thermostat to maintain the system's temperature.
-void thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin)
+double thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin, double T_meas)
 /// \todo Change velocities by thermostatting
 {
+    int N = p_parameters->num_part;
+    double T_therm, lambda = 0.0;
+    double dt = p_parameters->dt;
+    double tau = 1000; // [s]
+    double T0 = 298; // [K]
+    struct Vec3D *v = p_vectors->v;
+    
+    lambda = sqrt(1+dt/tau * (T0/T_meas - 1));
+
+    printf("Lambda= %lf, Tmeas=%lf\n", lambda, T_therm);
+
+    for (int i= 0; i<N; i++)
+    {
+        p_vectors->v[i].x = lambda*p_vectors->v[i].x;
+        p_vectors->v[i].y = lambda*p_vectors->v[i].y;
+        p_vectors->v[i].z = lambda*p_vectors->v[i].z;
+    }
+    return T_therm;
 }
