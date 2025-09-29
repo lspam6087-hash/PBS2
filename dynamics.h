@@ -37,7 +37,7 @@ void boundary_conditions(struct Parameters *p_parameters, struct Vectors *p_vect
  * @param[in] Ekin current kinetic energy
  * @param[in] T_meas Measured temperature
  */
-double thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin, double T_meas);
+void thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin, double T_meas);
 
 /**
  * @brief Calculate the instantaneous measured temperature from the kinetic energy.

@@ -38,6 +38,7 @@
 #include "tests.h"
 // #define RUN_TEST_NB
 #define RUN_TEST_NVE     // ← activa el test NVE
+// #define RUN_TEST_NVT
 
 
 /** 
@@ -79,7 +80,7 @@ int main(void)
     run_pair_case(0,1, &parameters, &vectors, &nbrlist); // CH3–CH2
     run_pair_case(1,1, &parameters, &vectors, &nbrlist); // CH2–CH2
     return 0; // exit program after the test
-#endif
+    #endif
 
 
     // Check if a restart is required
@@ -120,8 +121,8 @@ int main(void)
         T_meas = calc_temp(&parameters, Ekin); // Calculate instantaneous temperature LAURA B1
 
         /// \todo Implement and apply the Berendsen thermostat to maintain temperature (dynamics.c)
-        #ifndef RUN_TEST_NVE
-        T_therm = thermostat(&parameters, &vectors, Ekin, T_meas); 
+        #ifndef RUN_TEST_NVT
+        thermostat(&parameters, &vectors, Ekin, T_meas); 
         #endif
 
         // Update positions
