@@ -69,7 +69,7 @@ double calculate_forces_bond(struct Parameters *p_parameters, struct Vectors *p_
         f[j].y -= fi.y;
         f[j].z -= fi.z;
 
-        Epot = (k_B/2) * (rij_sq - r0)*(rij_sq - r0);
+        Epot += (k_B/2) * (rij_sq - r0)*(rij_sq - r0);
 
     }
 }
@@ -121,9 +121,9 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         fi.y = prefac * ((rkj.y/(r1_sq*r2_sq)) - (cos(theta)*rij.y)/(r1_sq*r1_sq));
         fi.z = prefac * ((rkj.z/(r1_sq*r2_sq)) - (cos(theta)*rij.z)/(r1_sq*r1_sq));
  
-        fk.x = prefac * ((rij.x/(r1_sq*r2_sq)) - (cos(theta)*rkj.x)/(r1_sq*r1_sq));
-        fk.y = prefac * ((rij.y/(r1_sq*r2_sq)) - (cos(theta)*rkj.y)/(r1_sq*r1_sq));
-        fk.z = prefac * ((rij.z/(r1_sq*r2_sq)) - (cos(theta)*rkj.z)/(r1_sq*r1_sq));
+        fk.x = prefac * ((rij.x/(r1_sq*r2_sq)) - (cos(theta)*rkj.x)/(r2_sq*r2_sq));
+        fk.y = prefac * ((rij.y/(r1_sq*r2_sq)) - (cos(theta)*rkj.y)/(r2_sq*r2_sq));
+        fk.z = prefac * ((rij.z/(r1_sq*r2_sq)) - (cos(theta)*rkj.z)/(r2_sq*r2_sq));
 
         f[i].x += fi.x;
         f[i].y += fi.y;
@@ -135,14 +135,14 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         f[k].y += fk.y;
         f[k].z += fk.z;
 
-        Epot = (k_B/2) * (theta - theta0)*(theta - theta0);
+        Epot += (k_B/2) * (theta - theta0)*(theta - theta0);
     } 
+    return Epot;
 }
 
 // This function calculates dihedral-torsion forces based on the positions of four connected particles.
 // Ryckaert–Bellemans: U(φ) = c0 + c1 cosφ + c2 cos^2φ + c3 cos^3φ
 // Forces: F_a = - (dU/dφ) * (∂φ/∂r_a)
-// Robust φ from plane normals; minimum-image already applied above.
 double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
     double Epot = 0.0;
@@ -167,14 +167,17 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
 
         // --- Minimum image vectors
         struct Vec3D rij, rjk, rkl;
+
         // i - j
         rij.x = r[i].x - r[j].x; rij.x -= L.x * floor(rij.x / L.x + 0.5);
         rij.y = r[i].y - r[j].y; rij.y -= L.y * floor(rij.y / L.y + 0.5);
         rij.z = r[i].z - r[j].z; rij.z -= L.z * floor(rij.z / L.z + 0.5);
+
         // k - j
         rjk.x = r[k].x - r[j].x; rjk.x -= L.x * floor(rjk.x / L.x + 0.5);
         rjk.y = r[k].y - r[j].y; rjk.y -= L.y * floor(rjk.y / L.y + 0.5);
         rjk.z = r[k].z - r[j].z; rjk.z -= L.z * floor(rjk.z / L.z + 0.5);
+
         // l - k
         rkl.x = r[l].x - r[k].x; rkl.x -= L.x * floor(rkl.x / L.x + 0.5);
         rkl.y = r[l].y - r[k].y; rkl.y -= L.y * floor(rkl.y / L.y + 0.5);
@@ -221,7 +224,6 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         double cos2 = cosphi * cosphi;
         double cos3 = cos2 * cosphi;
         double U = c0 + c1*cosphi + c2*cos2 + c3*cos3;
-        Epot += U;
 
         // dU/dφ = -sinφ * (c1 + 2 c2 cosφ + 3 c3 cos^2φ)
         double dUdphi = -sinphi * (c1 + 2.0*c2*cosphi + 3.0*c3*cos2);
@@ -259,10 +261,20 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         struct Vec3D fl = { -dUdphi * dphi_dl.x, -dUdphi * dphi_dl.y, -dUdphi * dphi_dl.z };
 
         // Accumulate
-        f[i].x += fi.x; f[i].y += fi.y; f[i].z += fi.z;
-        f[j].x += fj.x; f[j].y += fj.y; f[j].z += fj.z;
-        f[k].x += fk.x; f[k].y += fk.y; f[k].z += fk.z;
-        f[l].x += fl.x; f[l].y += fl.y; f[l].z += fl.z;
+        f[i].x += fi.x; 
+        f[i].y += fi.y; 
+        f[i].z += fi.z;
+        f[j].x += fj.x;
+        f[j].y += fj.y; 
+        f[j].z += fj.z;
+        f[k].x += fk.x; 
+        f[k].y += fk.y; 
+        f[k].z += fk.z;
+        f[l].x += fl.x; 
+        f[l].y += fl.y; 
+        f[l].z += fl.z;
+
+        Epot += U;
     }
     return Epot;
 }
@@ -309,10 +321,10 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
         if (rij.sq < r_cutsq)
         {
             // Lorentz-Berthelot mixing rules for sigma and epsilon
-            int tipo_i = p_vectors->type[i];
-            int tipo_j = p_vectors->type[j];
-            double sigma_ij = 0.5 * (p_parameters->sigma[tipo_i] + p_parameters->sigma[tipo_j]);
-            double epsilon_ij = sqrt(p_parameters->epsilon[tipo_i] * p_parameters->epsilon[tipo_j]);
+            int type_i = p_vectors->type[i];
+            int type_j = p_vectors->type[j];
+            double sigma_ij = 0.5 * (p_parameters->sigma[type_i] + p_parameters->sigma[type_j]);
+            double epsilon_ij = sqrt(p_parameters->epsilon[type_i] * p_parameters->epsilon[type_j]);
             sigmasq = sigma_ij * sigma_ij;
 
             sr2 = sigmasq / rij.sq;

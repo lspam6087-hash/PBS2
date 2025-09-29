@@ -36,8 +36,8 @@
 #include "memory.h" 
 #include "fileoutput.h" 
 #include "tests.h"
-#define RUN_TEST_NB
-//#define RUN_TEST_NVE     // ← activa el test NVE
+// #define RUN_TEST_NB
+#define RUN_TEST_NVE     // ← activa el test NVE
 
 
 /** 
@@ -165,7 +165,7 @@ if (step % 1000 == 0) {
 
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
-        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f, Tmeas %f, Ttherm %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas, T_therm);
+        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f, Tmeas %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
 
         // NEW: write diagnostics to CSV file
         record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
