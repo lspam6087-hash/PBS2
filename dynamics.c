@@ -116,7 +116,6 @@ double calc_temp(struct Parameters *p_parameters, double Ekin)
     return T_meas;
 }
 
-
 // This function applies a thermostat to maintain the system's temperature.
 double thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin, double T_meas)
 /// \todo Change velocities by thermostatting
@@ -130,7 +129,7 @@ double thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, do
     
     lambda = sqrt(1+dt/tau * (T0/T_meas - 1));
 
-    printf("Lambda= %lf, Tmeas=%lf\n", lambda, T_therm);
+    // printf("Lambda= %lf, Tmeas=%lf\n", lambda, T_therm);
 
     for (int i= 0; i<N; i++)
     {

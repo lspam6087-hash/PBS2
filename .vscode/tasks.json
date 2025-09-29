@@ -7,9 +7,9 @@
             "command": "C:/msys64/ucrt64/bin/gcc.exe",
             "args": [
                 "-g",
-                "${fileDirname}/*.c",
+                "*.c",
                 "--output",
-                "${fileDirname}/md_debug.exe",
+                "md_debug.exe",
                 "-lm"
             ],
             "options": {
@@ -33,9 +33,9 @@
             "command": "C:/msys64/ucrt64/bin/gcc.exe",
             "args": [
                 "-O3",
-                "${fileDirname}/*.c",
+                "*.c",
                 "--output",
-                "${fileDirname}/md.exe",
+                "md.exe",
                 "-lm"
             ],
             "options": {

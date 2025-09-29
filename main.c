@@ -1,4 +1,3 @@
-
 /******************************************************************************/ 
 /*                                                                            */
 /*  A Molecular Dynamics simulation of Lennard-Jones particles                */
@@ -37,10 +36,8 @@
 #include "memory.h" 
 #include "fileoutput.h" 
 #include "tests.h"
-//#define RUN_TEST_NB
-#define RUN_TEST_NVE     // ← activa el test NVE
-
-
+#define RUN_TEST_NB
+//#define RUN_TEST_NVE     // ← activa el test NVE
 
 
 /** 
@@ -120,9 +117,11 @@ int main(void)
         /// \todo Implement the use of type-dependent masses
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
 
+        T_meas = calc_temp(&parameters, Ekin); // Calculate instantaneous temperature LAURA B1
+
         /// \todo Implement and apply the Berendsen thermostat to maintain temperature (dynamics.c)
         #ifndef RUN_TEST_NVE
-        thermostat(&parameters, &vectors, Ekin); 
+        T_therm = thermostat(&parameters, &vectors, Ekin, T_meas); 
         #endif
 
         // Update positions
@@ -153,12 +152,7 @@ if (step % 1000 == 0) {
            (unsigned long)step, Etot, drift_rel);
 }
 #endif
-
-        // Calculate instantaneous temperature LAURA B1
-        T_meas = calc_temp(&parameters, Ekin);
-
-        T_therm = thermostat(&parameters, &vectors, Ekin, T_meas);
-
+    
         // Output system state every 'num_dt_pdb' steps
         if (step % parameters.num_dt_pdb == 0) 
             record_trajectories_pdb(0, &parameters, &vectors, time); 
@@ -171,7 +165,7 @@ if (step % 1000 == 0) {
 
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
-        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin);
+        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f, Tmeas %f, Ttherm %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas, T_therm);
 
         // NEW: write diagnostics to CSV file
         record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
@@ -217,3 +211,4 @@ if (step % 1000 == 0) {
  *
  * In summary: initialization → (velocity-Verlet integration + thermostat + I/O) → finalization.
  */
+
