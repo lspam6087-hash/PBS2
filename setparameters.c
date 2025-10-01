@@ -27,10 +27,10 @@ p_parameters->epsilon[1] = 46.0; // CH2 (K, en ε/kB)
   p_parameters->exclude_13_nb = 1;
   p_parameters->exclude_14_nb = 1;                          // 1-4 connected atoms exluded from non-bonded interactions                              // 1-3 connected atoms exluded from non-bonded interactions    
   p_parameters->dt = 0.0001;                                  //integration time step
-  p_parameters->L = (struct Vec3D){28.2, 28.2, 28.2}; //box size
-  p_parameters->r_cut = 14;                              //cut-off distance used for neigbor list
+  p_parameters->L = (struct Vec3D){28.2, 28.2, 28.2};       //box size
+  p_parameters->r_cut = 14;                                 //cut-off distance used for neigbor list
   p_parameters->r_shell = 1.5;                              //shell thickness for neighbor list
-  p_parameters->num_dt_pdb = 500;                           //number of time steps in between pdb outputs
+  p_parameters->num_dt_pdb = 100;                           //number of time steps in between pdb outputs
   strcpy(p_parameters->filename_pdb, "trajectories");       //filename (without extension) for pdb file
   p_parameters->rescale_output = 1;                         //factor used to rescale output lengthscale (Most visualisation programs identify bonds based on distances of order 1)
   p_parameters->load_restart = 0;                           //if equal 1 restart file is loaded

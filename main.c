@@ -122,7 +122,7 @@ int main(void)
 
         /// \todo Implement and apply the Berendsen thermostat to maintain temperature (dynamics.c)
         #ifndef RUN_TEST_NVT
-        thermostat(&parameters, &vectors, Ekin, T_meas); 
+        // thermostat(&parameters, &vectors, Ekin, T_meas); 
         #endif
 
         // Update positions
