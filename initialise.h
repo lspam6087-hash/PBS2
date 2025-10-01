@@ -54,4 +54,12 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
  */
 void initialise_velocities(struct Parameters *p_parameters, struct Vectors *p_vectors);
 
+/**
+ * @brief Calculates the box length in Angstrom from density
+ * 
+ * @param Nmol 
+ * @param p_vectors
+ */
+double box_length_from_density_A(size_t Nmol, double rho_kg_m3);
+
 #endif /* INITIALISE_H_ */

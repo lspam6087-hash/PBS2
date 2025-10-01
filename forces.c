@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "structs.h"
 #include "nbrlist.h"
+#include "vec3d.h"
 
 // This function calculates all forces acting on the particles (bonded and non-bonded).
 // It initializes the forces array, then calculates bond-stretch, angle-bend, dihedral-torsion,
@@ -20,9 +21,9 @@ double calculate_forces(struct Parameters *p_parameters, struct Nbrlist *p_nbrli
 
     // Calculate the forces and accumulate the potential energy from each type of interaction
     double Epot = calculate_forces_bond(p_parameters, p_vectors);
-    Epot += calculate_forces_angle(p_parameters, p_vectors);
-    Epot += calculate_forces_dihedral(p_parameters, p_vectors);
-    Epot += calculate_forces_nb(p_parameters, p_nbrlist, p_vectors);
+    // Epot += calculate_forces_angle(p_parameters, p_vectors);
+    // Epot += calculate_forces_dihedral(p_parameters, p_vectors);
+    // Epot += calculate_forces_nb(p_parameters, p_nbrlist, p_vectors);
 
     return Epot;
 }
@@ -57,10 +58,11 @@ double calculate_forces_bond(struct Parameters *p_parameters, struct Vectors *p_
 
     /// \todo (done) Provide the bond force calculation and assign forces to particles i and j
         double rij_sq = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
+        if (rij_sq < 1e-8) rij_sq = 1e-8;
 
-        fi.x = -k_B * (rij_sq - r0) * (rij.x/rij_sq);
-        fi.y = -k_B * (rij_sq - r0) * (rij.y/rij_sq);
-        fi.z = -k_B * (rij_sq - r0) * (rij.z/rij_sq);
+        fi.x = -k_b * (rij_sq - r0) * (rij.x/rij_sq);
+        fi.y = -k_b * (rij_sq - r0) * (rij.y/rij_sq);
+        fi.z = -k_b * (rij_sq - r0) * (rij.z/rij_sq);
         
         f[i].x += fi.x;
         f[i].y += fi.y;
@@ -113,22 +115,40 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         rkj.z = rkj.z - L.z * floor(rkj.z / L.z + 0.5);
 
     /// \todo (done) Provide the angle force calculation and assign forces to particles i, j, and k
-        double r1_sq = (rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
-        double r2_sq = (rkj.x*rkj.x + rkj.y*rkj.y + rkj.z*rkj.z);
-        double value = (rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(r1_sq*r2_sq);
-        if (value >1) value = 1;
-        if (value <-1) value = -1;
-        double theta = acos(value);
-        // double theta = acos((rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(r1_sq*r2_sq));
-        double prefac = k_theta * (theta - theta0) / (sin(theta));
+        double rij_sq = (rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
+        double rkj_sq = (rkj.x*rkj.x + rkj.y*rkj.y + rkj.z*rkj.z);
 
-        fi.x = prefac * ((rkj.x/(r1_sq*r2_sq)) - (cos(theta)*rij.x)/(r1_sq*r1_sq));
-        fi.y = prefac * ((rkj.y/(r1_sq*r2_sq)) - (cos(theta)*rij.y)/(r1_sq*r1_sq));
-        fi.z = prefac * ((rkj.z/(r1_sq*r2_sq)) - (cos(theta)*rij.z)/(r1_sq*r1_sq));
- 
-        fk.x = prefac * ((rij.x/(r1_sq*r2_sq)) - (cos(theta)*rkj.x)/(r2_sq*r2_sq));
-        fk.y = prefac * ((rij.y/(r1_sq*r2_sq)) - (cos(theta)*rkj.y)/(r2_sq*r2_sq));
-        fk.z = prefac * ((rij.z/(r1_sq*r2_sq)) - (cos(theta)*rkj.z)/(r2_sq*r2_sq));
+        if (rij_sq < 1e-8) rij_sq = 1e-8;
+        if (rkj_sq < 1e-8) rkj_sq = 1e-8;
+
+        double cos_theta = (rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(rij_sq*rkj_sq);
+
+        if (cos_theta > 1) cos_theta = 1;
+        if (cos_theta < -1) cos_theta = -1;
+
+        double theta = acos(cos_theta);
+
+        double dtheta = theta - theta0;
+        double sin_theta = sin(theta);
+
+        if (fabs(sin_theta) < 1e-8) 
+        {
+            if (sin_theta >= 0.0) 
+                sin_theta = 1e-8;  
+            else 
+                sin_theta = -1e-8;  
+        }
+
+        // double theta = acos((rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(rij_sq*rkj_sq));
+        double prefac = k_theta * dtheta / sin_theta;
+
+        fi.x = (prefac / rij_sq) * (rkj.x - (cos_theta*rij.x));
+        fi.y = (prefac / rij_sq) * (rkj.y - (cos_theta*rij.y));
+        fi.z = (prefac / rij_sq) * (rkj.z - (cos_theta*rij.z));
+
+        fk.x = (prefac / rkj_sq) * (rij.x - (cos_theta*rkj.x));
+        fk.y = (prefac / rkj_sq) * (rij.y - (cos_theta*rkj.y));
+        fk.z = (prefac / rkj_sq) * (rij.z - (cos_theta*rkj.z));
 
         f[i].x += fi.x;
         f[i].y += fi.y;
@@ -140,14 +160,12 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         f[k].y += fk.y;
         f[k].z += fk.z;
         
-        Epot += (k_theta/2) * (theta - theta0)*(theta - theta0);
+        Epot += (k_theta/2) * (dtheta*dtheta);
     } 
     return Epot;
 }
 
 // This function calculates dihedral-torsion forces based on the positions of four connected particles.
-// Ryckaert–Bellemans: U(φ) = c0 + c1 cosφ + c2 cos^2φ + c3 cos^3φ
-// Forces: F_a = - (dU/dφ) * (∂φ/∂r_a)
 double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
     double Epot = 0.0;
@@ -156,8 +174,10 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
     struct Vec3D *f = p_vectors->f;
     struct Vec3D *r = p_vectors->r;
     struct Vec3D L = p_parameters->L;
+    struct Vec3D rij, rkj, rkl;
+    struct Vec3D fi, fj, fk, fl = {0.0, 0.0, 0.0};
 
-    // --- RB coefficients (in units of kB*T with kB=1 here). Move to Parameters if pref.
+    // --- RB coefficients (in units of kB*T). Move to Parameters if pref.
     const double c0 = 1010.0;
     const double c1 = -2018.9;
     const double c2 = 136.4;
@@ -170,10 +190,6 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         size_t k = dihedrals[q].k;
         size_t l = dihedrals[q].l;
 
-        // --- Minimum image vectors
-        struct Vec3D rij, rjk, rkl;
-
-        // i - j
         rij.x = r[i].x - r[j].x; 
         rij.x -= L.x * floor(rij.x / L.x + 0.5);
         rij.y = r[i].y - r[j].y; 
@@ -181,15 +197,13 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         rij.z = r[i].z - r[j].z; 
         rij.z -= L.z * floor(rij.z / L.z + 0.5);
 
-        // k - j
-        rjk.x = r[k].x - r[j].x; 
-        rjk.x -= L.x * floor(rjk.x / L.x + 0.5);
-        rjk.y = r[k].y - r[j].y; 
-        rjk.y -= L.y * floor(rjk.y / L.y + 0.5);
-        rjk.z = r[k].z - r[j].z; 
-        rjk.z -= L.z * floor(rjk.z / L.z + 0.5);
+        rkj.x = r[k].x - r[j].x;
+        rkj.x = rkj.x - L.x * floor(rkj.x / L.x + 0.5);
+        rkj.y = r[k].y - r[j].y;
+        rkj.y = rkj.y - L.y * floor(rkj.y / L.y + 0.5);
+        rkj.z = r[k].z - r[j].z;
+        rkj.z = rkj.z - L.z * floor(rkj.z / L.z + 0.5);
 
-        // l - k
         rkl.x = r[l].x - r[k].x; 
         rkl.x -= L.x * floor(rkl.x / L.x + 0.5);
         rkl.y = r[l].y - r[k].y; 
@@ -197,97 +211,52 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         rkl.z = r[l].z - r[k].z; 
         rkl.z -= L.z * floor(rkl.z / L.z + 0.5);
 
-        // Build bond vectors b1 = r_j - r_i = -rij ; b2 = r_k - r_j = rjk ; b3 = r_l - r_k = rkl
-        struct Vec3D b1 = { -rij.x, -rij.y, -rij.z };
-        struct Vec3D b2 = rjk;
-        struct Vec3D b3 = rkl;
+        struct Vec3D nj = cross(rij, rkj);
+        struct Vec3D nk = cross(rkj, rkl);
+        double nj_mag = norm(nj);
+        double nk_mag = norm(nk);
 
-        // Norms and dots
-        double b2n2 = b2.x*b2.x + b2.y*b2.y + b2.z*b2.z;
-        double b2n  = sqrt(b2n2);
+        if (nj_mag < 1e-2) nj_mag = 1e-2;
+        if (nk_mag < 1e-2) nk_mag = 1e-2;
 
-        // n1 = b1 x b2 ; n2 = b3 x b2
-        struct Vec3D n1 = { b1.y*b2.z - b1.z*b2.y, b1.z*b2.x - b1.x*b2.z, b1.x*b2.y - b1.y*b2.x };
-        struct Vec3D n2 = { b3.y*b2.z - b3.z*b2.y, b3.z*b2.x - b3.x*b2.z, b3.x*b2.y - b3.y*b2.x };
+        struct Vec3D nj_hat = scl(1.0/ nj_mag, nj);
+        struct Vec3D nk_hat = scl(1.0/ nk_mag, nk);
 
-        double n1n2 = n1.x*n2.x + n1.y*n2.y + n1.z*n2.z;
-        double n1n2_abs, n1n, n2n;
-        double n1n2_den;
+        double cos_phi = dot(nj_hat, nk_hat);
+        if (cos_phi >  1.0) cos_phi =  1.0;
+        if (cos_phi < -1.0) cos_phi = -1.0;
 
-        double n1n2a = n1.x*n1.x + n1.y*n1.y + n1.z*n1.z;
-        double n2n2a = n2.x*n2.x + n2.y*n2.y + n2.z*n2.z;
+        double dU_dcosphi = c1 + 2 * c2 * cos_phi + 3 * c3 * cos_phi * cos_phi;
 
-        // Guard against collinear cases
-        if (b2n < 1e-12 || n1n2a < 1e-24 || n2n2a < 1e-24)
-            continue;
+        // Gradients calculation
+        double rkj_mag = norm(rkj);
+        double rkj_sq = rkj_mag * rkj_mag;
+        struct Vec3D grad_ij = scl(-dot(rkl, nj_hat) * rkj_sq / (nj_mag * nk_mag), nj_hat);
+        struct Vec3D grad_kl = scl(-dot(rij, nk_hat) * rkj_sq / (nj_mag * nk_mag), nk_hat);
 
-        n1n = sqrt(n1n2a);
-        n2n = sqrt(n2n2a);
-        n1n2_den = n1n * n2n;
+        struct Vec3D grad_kj_1 = scl(dot(rkj, rij) * dot(rkl, nj_hat) / (nj_mag * nk_mag), nj_hat);
+        struct Vec3D grad_kj_2 = scl(dot(rkj, rkl) * dot(rij, nk_hat) / (nj_mag * nk_mag), nk_hat);
+        struct Vec3D grad_kj = add(grad_kj_1, grad_kj_2);
 
-        // cosφ and sinφ (atan2-free; we only need cos and sin)
-        double cosphi = n1n2 / n1n2_den;
-        if (cosphi >  1.0) cosphi =  1.0;
-        if (cosphi < -1.0) cosphi = -1.0;
+        // Atom gradient calculations
+        struct Vec3D grad_i = grad_ij;
+        struct Vec3D grad_j = add(scl(-1.0, grad_ij), scl(-1.0, grad_kj));
+        struct Vec3D grad_k = add(grad_kj, grad_kl);
+        struct Vec3D grad_l = scl(-1.0, grad_kl);
 
-        // sinφ sign from b1·n2
-        double b1_dot_n2 = b1.x*n2.x + b1.y*n2.y + b1.z*n2.z;
-        double sinphi = (b2n * b1_dot_n2) / n1n2_den;
+        // Forces calculation
+        struct Vec3D fi = scl(-dU_dcosphi, grad_i);
+        struct Vec3D fj = scl(-dU_dcosphi, grad_j);
+        struct Vec3D fk = scl(-dU_dcosphi, grad_k);
+        struct Vec3D fl = scl(-dU_dcosphi, grad_l);
 
-        // Energy (RB up to cos^3)
-        double cos2 = cosphi * cosphi;
-        double cos3 = cos2 * cosphi;
+        //Add forces
+        f[i] = add(f[i], fi);
+        f[j] = add(f[j], fj);
+        f[k] = add(f[k], fk);
+        f[l] = add(f[l], fl);
 
-        // dU/dφ = -sinφ * (c1 + 2 c2 cosφ + 3 c3 cos^2φ)
-        double dUdphi = -sinphi * (c1 + 2.0*c2*cosphi + 3.0*c3*cos2);
-
-        // ∂φ/∂r vectors (standard dihedral gradients)
-        // dphi/di = - (|b2| / |n1|^2) * n1
-        // dphi/dl =   (|b2| / |n2|^2) * n2
-        // dphi/dj =  ( (b1·b2)/|b2|^2 ) dphi/di - ( (b3·b2)/|b2|^2 ) dphi/dl
-        // dphi/dk = -dphi/di - dphi/dj - dphi/dl
-        double inv_n1n2a = 1.0 / n1n2a;
-        double inv_n2n2a = 1.0 / n2n2a;
-        double inv_b2n2  = 1.0 / b2n2;
-
-        struct Vec3D dphi_di = { -b2n * n1.x * inv_n1n2a, -b2n * n1.y * inv_n1n2a, -b2n * n1.z * inv_n1n2a };
-        struct Vec3D dphi_dl = {  b2n * n2.x * inv_n2n2a,  b2n * n2.y * inv_n2n2a,  b2n * n2.z * inv_n2n2a };
-
-        double b1_dot_b2 = b1.x*b2.x + b1.y*b2.y + b1.z*b2.z;
-        double b3_dot_b2 = b3.x*b2.x + b3.y*b2.y + b3.z*b2.z;
-
-        struct Vec3D dphi_dj = {
-            ( b1_dot_b2 * dphi_di.x - b3_dot_b2 * dphi_dl.x ) * inv_b2n2,
-            ( b1_dot_b2 * dphi_di.y - b3_dot_b2 * dphi_dl.y ) * inv_b2n2,
-            ( b1_dot_b2 * dphi_di.z - b3_dot_b2 * dphi_dl.z ) * inv_b2n2
-        };
-        struct Vec3D dphi_dk = {
-            -(dphi_di.x + dphi_dj.x + dphi_dl.x),
-            -(dphi_di.y + dphi_dj.y + dphi_dl.y),
-            -(dphi_di.z + dphi_dj.z + dphi_dl.z)
-        };
-
-        // Forces: F = - dU/dφ * ∂φ/∂r
-        struct Vec3D fi = { -dUdphi * dphi_di.x, -dUdphi * dphi_di.y, -dUdphi * dphi_di.z };
-        struct Vec3D fj = { -dUdphi * dphi_dj.x, -dUdphi * dphi_dj.y, -dUdphi * dphi_dj.z };
-        struct Vec3D fk = { -dUdphi * dphi_dk.x, -dUdphi * dphi_dk.y, -dUdphi * dphi_dk.z };
-        struct Vec3D fl = { -dUdphi * dphi_dl.x, -dUdphi * dphi_dl.y, -dUdphi * dphi_dl.z };
-
-        // Accumulate
-        f[i].x += fi.x; 
-        f[i].y += fi.y; 
-        f[i].z += fi.z;
-        f[j].x += fj.x;
-        f[j].y += fj.y; 
-        f[j].z += fj.z;
-        f[k].x += fk.x; 
-        f[k].y += fk.y; 
-        f[k].z += fk.z;
-        f[l].x += fl.x; 
-        f[l].y += fl.y; 
-        f[l].z += fl.z;
-
-        Epot += c0 + c1*cosphi + c2*cos2 + c3*cos3;
+        Epot += c0 + c1*cos_phi + c2*cos_phi*cos_phi + c3*cos_phi*cos_phi*cos_phi;
     }
     return Epot;
 }
@@ -312,6 +281,7 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
 {
     struct Vec3D df;
     double r_cutsq, sigmasq, sr2, sr6, sr12, fr;
+    double sr2_cut, sr6_cut, sr12_cut;
     struct DeltaR rij;
     struct Pair *nbr = p_nbrlist->nbr;
     const size_t num_nbrs = p_nbrlist->num_nbrs;
@@ -320,6 +290,7 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
 
     r_cutsq = p_parameters->r_cut * p_parameters->r_cut;
     double Epot = 0.0, Epot_cutoff;
+
     // The energy shift (Epot_cutoff) will be calculated per pair using sigma_ij (Lorentz-Berthelot mixing rule).
     // This is correct for mixtures, since each pair can have a different sigma.
 
@@ -333,27 +304,31 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
     // Compute forces if the distance is smaller than the cutoff distance
         if (rij.sq < r_cutsq)
         {
+            // Skip the LJ for bonded interactions
+            if ( (p_parameters->exclude_12_nb && is_connected_12(i,j,p_nbrlist)) || (p_parameters->exclude_13_nb && is_connected_13(i,j,p_nbrlist)) || (p_parameters->exclude_14_nb && is_connected_14(i,j,p_nbrlist)) )
+                continue;
+
             // Lorentz-Berthelot mixing rules for sigma and epsilon
             int type_i = p_vectors->type[i];
             int type_j = p_vectors->type[j];
+
             double sigma_ij = 0.5 * (p_parameters->sigma[type_i] + p_parameters->sigma[type_j]);
+            double sigma_ij_sq = sigma_ij * sigma_ij;
             double epsilon_ij = sqrt(p_parameters->epsilon[type_i] * p_parameters->epsilon[type_j]);
             sigmasq = sigma_ij * sigma_ij;
 
+            //Calculate Epot_cut
+            sr2_cut = sigmasq / r_cutsq;
+            sr6_cut = sr2_cut * sr2_cut * sr2_cut;
+            sr12_cut = sr6_cut * sr6_cut;
+            Epot_cutoff = sr12_cut - sr6_cut;
+
+            // Calculate LJ potential
             sr2 = sigmasq / rij.sq;
             sr6 = sr2 * sr2 * sr2;
             sr12 = sr6 * sr6;
 
-            // --- IMPORTANT: Per-pair energy shift ---
-            // To ensure the truncated potential is continuous in mixtures,
-            // the shift (Epot_cutoff) must be calculated using sigma_ij for each pair.
-            double sr2c  = sigmasq / r_cutsq;
-            double sr6c  = sr2c * sr2c * sr2c;
-            double sr12c = sr6c * sr6c;
-            double Epot_cutoff = sr12c - sr6c;
-
-        
-            // Calculate the potential energy
+           // Calculate the potential energy
             Epot += 4.0 * epsilon_ij * (sr12 - sr6 - Epot_cutoff);
 
             // Compute the force and apply it to both particles
@@ -392,7 +367,7 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
  *      on all particles.
  *
  * In summary:
- * - The return value is the total non-bonded potential energy.
+ * - The return cos_theta is the total non-bonded potential energy.
  * - The particle force vectors are updated as a side effect.
  */
 

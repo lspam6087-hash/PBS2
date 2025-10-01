@@ -203,65 +203,160 @@ void initialise(struct Parameters *p_parameters, struct Vectors *p_vectors, stru
 
 // This function initializes particle positions on a cubic lattice.
 // Particles are placed in a grid with spacing based on the number of particles and the box dimensions.
+//Build a n-butane molecule with 4 particles in already the right geometry
+void build_molecule(struct Parameters *p_parameters, struct Vec3D molecule_center, struct Vectors *p_vectors, int ipart)
+{
+    //place particle 1 (CH3)
+    p_vectors->r[ipart].x = molecule_center.x - r0;
+    p_vectors->r[ipart].y = molecule_center.y;
+    p_vectors->r[ipart].z = molecule_center.z;
+
+    //place particle 2 (CH2)
+    p_vectors->r[ipart + 1].x = molecule_center.x;
+    p_vectors->r[ipart + 1].y = molecule_center.y;
+    p_vectors->r[ipart + 1].z = molecule_center.z;
+
+    //place particle 3 (CH2)
+    double dx = r0 * cos(theta0);  
+    double dy = r0 * sin(theta0);       
+    p_vectors->r[ipart + 2].x = p_vectors->r[ipart + 1].x - dx;
+    p_vectors->r[ipart + 2].y = p_vectors->r[ipart + 1].y + dy;
+    p_vectors->r[ipart + 2].z = molecule_center.z;
+
+    //place particle 4 (CH3)
+    p_vectors->r[ipart + 3].x = p_vectors->r[ipart + 2].x + r0;
+    p_vectors->r[ipart + 3].y = p_vectors->r[ipart + 2].y;
+    p_vectors->r[ipart + 3].z = molecule_center.z;
+}
+
+
+// This function initializes particle positions on a cubic lattice.
+// Particles are placed in a grid with spacing based on the number of particles and the box dimensions.
 void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
     struct Vec3D dr;  // Displacement vector for positioning particles
     struct Index3D n; // Number of grid cells along each axis
     double dl;        // Lattice spacing
     int ipart = 0;    // Particle index
+    int imol = 0;     //molecule index
+
+    int num_mol = p_parameters->num_part / 4;
+    double bondlength = r0 + 0.0;
+
+    //If there is only 1 molecule: center in box
+    if (num_mol == 1) 
+    {
+        // centre of the box
+        struct Vec3D molecule_center;
+        molecule_center.x = 0.5 * p_parameters->L.x;
+        molecule_center.y = 0.5 * p_parameters->L.y;
+        molecule_center.z = 0.5 * p_parameters->L.z;
+
+        // place 4 atoms in a straight x-direction chain centred at box centre
+        build_molecule(p_parameters, molecule_center, p_vectors, 0);
+        return;
+    }
 
     // Calculate lattice spacing based on particle number and box dimensions
-    dl = pow(p_parameters->L.x * p_parameters->L.y * p_parameters->L.z / ((double)p_parameters->num_part), 1.0 / 3.0);
-    n.i = (int)ceil(p_parameters->L.x / dl);
-    n.j = (int)ceil(p_parameters->L.y / dl);
-    n.k = (int)ceil(p_parameters->L.z / dl);
+    //dl = pow(p_parameters->L.x * p_parameters->L.y * p_parameters->L.z / ((double)num_mol), 1.0 / 3.0);
+    //n.i = (int)ceil(p_parameters->L.x / dl);
+    //n.j = (int)ceil(p_parameters->L.y / dl);
+    //n.k = (int)ceil(p_parameters->L.z / dl);
+
+    n.i = (int) floor(p_parameters->L.x / 7.0);
+    if (n.i < 1) 
+        n.i = 1;
+
+    int mol_per_layer = (int) ceil((double) num_mol / n.i);
+    n.j = (int) floor(sqrt(mol_per_layer));
+    if (n.j < 1) 
+        n.j = 1;
+    n.k = (int) ceil((double) mol_per_layer / n.j);
+
     dr.x = p_parameters->L.x / (double)n.i;
     dr.y = p_parameters->L.y / (double)n.j;
     dr.z = p_parameters->L.z / (double)n.k;
     ipart = 0;
+    imol = 0;
     for (size_t i = 0; i < n.i; ++i)
+    {
         for (size_t j = 0; j < n.j; ++j)
-            for (size_t k = 0; k < n.k; ++k, ++ipart)
+        {
+            for (size_t k = 0; k < n.k; ++k)
             {
-                if (ipart >= p_parameters->num_part)
+                if (imol >= num_mol)
                     break;
-                p_vectors->r[ipart].x = (i + 0.5) * dr.x;
-                p_vectors->r[ipart].y = (j + 0.5) * dr.y;
-                p_vectors->r[ipart].z = (k + 0.5) * dr.z;
-                //      p_vectors->r[ipart].x = p_parameters->L.x*generate_uniform_random();
-                //      p_vectors->r[ipart].y = p_parameters->L.y*generate_uniform_random();
-                //      p_vectors->r[ipart].z = p_parameters->L.z*generate_uniform_random();
+                
+                //Molecule center
+                struct Vec3D molecule_center;
+                molecule_center.x = (i + 0.5) * dr.x;
+                molecule_center.y = (j + 0.5) * dr.y;
+                molecule_center.z = (k + 0.5) * dr.z;
+                
+                build_molecule(p_parameters, molecule_center, p_vectors, ipart);
+
+                ipart += 4;
+                imol++;
             }
+        if (imol >= num_mol)
+            break;
+        }
+    if (imol >= num_mol)
+        break;
+    }
 }
 
 // This function initializes the velocities of particles based on the Maxwell-Boltzmann distribution.
 // The total momentum is also removed to ensure zero total momentum (important for stability).
 void initialise_velocities(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
-    double sqrtktm = sqrt(p_parameters->kT / p_parameters->mass[0]); //mass is not a escalar number anymore is a type-dependent array
     struct Vec3D sumv = {0.0, 0.0, 0.0};  // Total velocity (to remove later)
 
     // Assign random velocities to each particle
     for (size_t i = 0; i < p_parameters->num_part; i++)
     {
-            int tipo = p_vectors->type[i];
-            double sqrtktm = sqrt(p_parameters->kT / p_parameters->mass[tipo]);
-            p_vectors->v[i].x = sqrtktm * gauss();
-            p_vectors->v[i].y = sqrtktm * gauss();
-            p_vectors->v[i].z = sqrtktm * gauss();
+        //Use specific mass per particleelocit
+        double mass = p_parameters->mass[p_vectors->type[i]];
+        double sqrtktm = sqrt(p_parameters->kT / mass);
+
+        p_vectors->v[i].x = sqrtktm * gauss();
+        p_vectors->v[i].y = sqrtktm * gauss();
+        p_vectors->v[i].z = sqrtktm * gauss();
         sumv.x += p_vectors->v[i].x;
         sumv.y += p_vectors->v[i].y;
         sumv.z += p_vectors->v[i].z;
     }
 
-    // Remove the average velocity to ensure zero total momentum
-    sumv.x /= ((double)(p_parameters->num_part));
-    sumv.y /= ((double)(p_parameters->num_part));
-    sumv.z /= ((double)(p_parameters->num_part));
+    //calculate center of mass velocity
+    struct Vec3D momentum = {0.0, 0.0, 0.0};
+    double mtot = 0.0;
+
     for (size_t i = 0; i < p_parameters->num_part; i++)
     {
-        p_vectors->v[i].x -= sumv.x;
-        p_vectors->v[i].y -= sumv.y;
-        p_vectors->v[i].z -= sumv.z;
+        double m = p_parameters->mass[p_vectors->type[i]];
+        momentum.x += m * p_vectors->v[i].x;
+        momentum.y += m * p_vectors->v[i].y;
+        momentum.z += m * p_vectors->v[i].z;
+        mtot += m;
     }
+
+    struct Vec3D Vcm = {momentum.x / mtot, momentum.y / mtot, momentum.z / mtot};
+
+    //remove Vcm from each particle
+    for (size_t i = 0; i < p_parameters->num_part; i++)
+    {
+        p_vectors->v[i].x -= Vcm.x;
+        p_vectors->v[i].y -= Vcm.y;
+        p_vectors->v[i].z -= Vcm.z;
+    }
+}
+
+double box_length_from_density_A(size_t Nmol, double rho_kg_m3)
+{
+    const double NA = 6.02214076e23; // 1/mol
+    const double M_g_mol = 58.123;   // mass molar butane g/mol
+    double mass_total_kg = (Nmol * (M_g_mol / 1000.0)) / NA;
+    double V_m3 = mass_total_kg / rho_kg_m3;
+    double L_m  = cbrt(V_m3) * 1e10;
+    return L_m;
 }

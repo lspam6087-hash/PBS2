@@ -36,6 +36,8 @@
 #include "memory.h" 
 #include "fileoutput.h" 
 #include "tests.h"
+#include "vec3d.h"
+
 // #define RUN_TEST_NB
 #define RUN_TEST_NVE     // ← activa el test NVE
 // #define RUN_TEST_NVT
@@ -64,12 +66,15 @@ int main(void)
     struct Nbrlist nbrlist; 
     size_t step; 
     double Ekin, Epot, time, T_meas, T_therm; 
-
-
-
+    
 
     // Step 1: Set the simulation parameters from input files
     set_parameters(&parameters); 
+
+    // Determining the box size by the desired density
+    size_t Nmol = parameters.num_part / 4;
+    double L = box_length_from_density_A(Nmol, 600.0);  
+    parameters.L = (struct Vec3D){L, L, L};
 
     // Step 2: Allocate memory for particles, forces, and neighbor lists
     alloc_memory(&parameters, &vectors, &nbrlist); 
@@ -122,7 +127,7 @@ int main(void)
 
         /// \todo Implement and apply the Berendsen thermostat to maintain temperature (dynamics.c)
         #ifndef RUN_TEST_NVT
-        // thermostat(&parameters, &vectors, Ekin, T_meas); 
+        thermostat(&parameters, &vectors, Ekin, T_meas); 
         #endif
 
         // Update positions

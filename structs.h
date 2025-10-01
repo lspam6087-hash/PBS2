@@ -1,5 +1,6 @@
 #ifndef TYPES_MD_H_
 #define TYPES_MD_H_
+#include <stddef.h>
 
 /* This header file contains definitions of struct types used in the molecular dynamics code */
 
