@@ -166,7 +166,7 @@ if (step % 1000 == 0) {
 
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
-        printf("Step %lu, Time %f, Epot %f, Ekin %f, Etot %f, Tmeas %f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
+        printf("Step %lu, Time %.5f, Epot %.2f, Ekin %.2f, Etot %.2f, Tmeas %.2f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
 
         // NEW: write diagnostics to CSV file
         record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,

@@ -8,7 +8,7 @@
 // Set the parameters of this simulation
 void set_parameters(struct Parameters *p_parameters)
 {
-p_parameters->kT = 1.0; // si sigues usando energía reducida
+p_parameters->kT = 298.0; // si sigues usando energía reducida
 
 // Mass of both types of particles
 p_parameters->mass[0] = 15.0;  // CH3
@@ -21,13 +21,13 @@ p_parameters->epsilon[0] = 98.0; // CH3 (K, en ε/kB)
 p_parameters->epsilon[1] = 46.0; // CH2 (K, en ε/kB)
 
 // The parameters below control core functionalities of the code, but many values will need to be changed
-  p_parameters->num_part = 2000;                            //number of particles
+  p_parameters->num_part = 560;                            //number of particles
   p_parameters->num_dt_steps = 2000;                        //number of time steps
   p_parameters->exclude_12_nb = 1;                          // 1-2 connected atoms exluded from non-bonded interactions 
   p_parameters->exclude_13_nb = 1;
   p_parameters->exclude_14_nb = 1;                          // 1-4 connected atoms exluded from non-bonded interactions                              // 1-3 connected atoms exluded from non-bonded interactions    
-  p_parameters->dt = 0.002;                                  //integration time step
-  p_parameters->L = (struct Vec3D){43.135, 43.135, 43.135}; //box size
+  p_parameters->dt = 0.0001;                                  //integration time step
+  p_parameters->L = (struct Vec3D){28.2, 28.2, 28.2}; //box size
   p_parameters->r_cut = 14;                              //cut-off distance used for neigbor list
   p_parameters->r_shell = 1.5;                              //shell thickness for neighbor list
   p_parameters->num_dt_pdb = 500;                           //number of time steps in between pdb outputs

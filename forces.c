@@ -58,9 +58,9 @@ double calculate_forces_bond(struct Parameters *p_parameters, struct Vectors *p_
     /// \todo (done) Provide the bond force calculation and assign forces to particles i and j
         double rij_sq = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
 
-        fi.x = -k_b * (rij_sq - r0) * (rij.x/rij_sq);
-        fi.y = -k_b * (rij_sq - r0) * (rij.y/rij_sq);
-        fi.z = -k_b * (rij_sq - r0) * (rij.z/rij_sq);
+        fi.x = -k_B * (rij_sq - r0) * (rij.x/rij_sq);
+        fi.y = -k_B * (rij_sq - r0) * (rij.y/rij_sq);
+        fi.z = -k_B * (rij_sq - r0) * (rij.z/rij_sq);
         
         f[i].x += fi.x;
         f[i].y += fi.y;
@@ -69,9 +69,10 @@ double calculate_forces_bond(struct Parameters *p_parameters, struct Vectors *p_
         f[j].y -= fi.y;
         f[j].z -= fi.z;
 
-        Epot += (k_B/2) * (rij_sq - r0)*(rij_sq - r0);
+        Epot += (k_b/2) * (rij_sq - r0)*(rij_sq - r0);
 
     }
+    return Epot;
 }
 
 
@@ -114,7 +115,11 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
     /// \todo (done) Provide the angle force calculation and assign forces to particles i, j, and k
         double r1_sq = (rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
         double r2_sq = (rkj.x*rkj.x + rkj.y*rkj.y + rkj.z*rkj.z);
-        double theta = acos((rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(r1_sq*r2_sq));
+        double value = (rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(r1_sq*r2_sq);
+        if (value >1) value = 1;
+        if (value <-1) value = -1;
+        double theta = acos(value);
+        // double theta = acos((rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(r1_sq*r2_sq));
         double prefac = k_theta * (theta - theta0) / (sin(theta));
 
         fi.x = prefac * ((rkj.x/(r1_sq*r2_sq)) - (cos(theta)*rij.x)/(r1_sq*r1_sq));
@@ -134,8 +139,8 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         f[k].x += fk.x;
         f[k].y += fk.y;
         f[k].z += fk.z;
-
-        Epot += (k_B/2) * (theta - theta0)*(theta - theta0);
+        
+        Epot += (k_theta/2) * (theta - theta0)*(theta - theta0);
     } 
     return Epot;
 }

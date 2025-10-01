@@ -17,7 +17,7 @@
 //#define k_B 1.380649 //Boltzmann constant in J/K
 //#define k_b 440.427031 //Bond force constant in N/m
 
-#define k_theta 8.63e-19 //Angle force constant in J/rad^2
+#define k_theta 6.25e4 //Angle force constant in J/rad^2
 #define theta0 1.989675347 //Equilibrium angle in rad (114 degrees)
 
 #endif /* CONSTANTS_H_ */

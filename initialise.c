@@ -26,11 +26,23 @@ void initialise_types(struct Parameters *p_parameters, struct Vectors *p_vectors
 // This will be important for handling bonded interactions in the simulation.
 void initialise_bond_connectivity(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
-    size_t num_bonds = 0;  // Currently, no bonds are set up.
+    size_t num_bonds = p_parameters->num_part * 3/4;  // Currently, no bonds are set up.
+    int N = p_parameters->num_part;
     struct Bond *bonds = (struct Bond *)malloc(num_bonds * sizeof(struct Bond));
 
-    /// \todo Specify bonds between particles, i.e., bonds[i].i and bonds[i].j for bonded particle pairs.
-
+    /// \todo (urgent) Specify bonds between particles, i.e., bonds[i].i and bonds[i].j for bonded particle pairs.
+    size_t x = 0;
+    for (int n = 0; n < N; n++)
+    {
+        if ((n % 4) != 3)
+        {
+            bonds[x].i = n;
+            bonds[x].j = n + 1;
+            x++;
+        }
+        
+    }
+    
     p_vectors->num_bonds = num_bonds;
     p_vectors->bonds = bonds;
 }
