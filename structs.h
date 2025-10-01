@@ -71,7 +71,14 @@ struct Parameters
     char filename_pdb[1024]; //!< filename (without extension) for pdb file
     char filename_xyz[1024]; //!< filename (without extension) for pdb file
     char load_restart;       //!< if equal 1 restart file is loaded
-    char filename_diag[256];   //!< base filename for diagnostics CSV output LAURA B1
+    char filename_diag[256]; //!< base filename for diagnostics CSV output LAURA B1
+    int sample_interval;     //!< sample the speeds on every interval
+    int write_interval;      //!< write histogram to disk every X steps
+    size_t nbins;            //!< number of bins
+    double hist_vmax;        //!< maximum velocity included in the histogram
+    char filename_hist[256]; //!< filename for the .csv file
+    size_t nbins_dih;           //!< number of bins for dihedral histogram
+    char filename_dih_hist[256];//!< filename for the .csv file for the histogram for dihedrals
     size_t num_dt_restart;   //!< Number of time steps between saves of restart file
     char restart_in_filename[1024];  //!< filename for loaded restart file
     char restart_out_filename[1024]; //!< filename for saved restart file
@@ -181,5 +188,17 @@ struct Nbrlist
     size_t *head13, *pairs13;          //!< list of 13 bonded pairs
     size_t *head14, *pairs14;          //!< list of 14 bonded pairs
 };
+
+/**
+ * @brief Struct to store data for a histogram
+ * 
+ */
+typedef struct {
+    size_t nbins;               //!< Number of bins
+    double vmin, vmax;          //!< Range in speed units
+    double bin_width;           //!< Width of the bins
+    unsigned long *counts;      //!< Counts per bin
+    unsigned long total_counts; //!< Total samples added
+} VelHist;
 
 #endif /* TYPES_MD_H_ */

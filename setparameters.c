@@ -37,8 +37,14 @@ p_parameters->epsilon[1] = 46.0; // CH2 (K, en ε/kB)
   strcpy(p_parameters->restart_in_filename, "restart.dat"); //filename for loaded restart file
   p_parameters->num_dt_restart = 1000;                      // number of time steps between saves
   strcpy(p_parameters->restart_out_filename, "restart.dat");//filename for saved restart file
-  strcpy(p_parameters->filename_diag, "diagnostics"); // filename (without extension) for diagnostics CSV LAURA
-
+  strcpy(p_parameters->filename_diag, "diagnostics");       // filename (without extension) for diagnostics CSV LAURA
+  p_parameters->nbins = 200;                                      // set the number of bins
+  p_parameters->sample_interval = 10;                            // sample the speeds on every interval
+  p_parameters->write_interval = 200;                             // write histogram to disk every X stepsp_parameters->nbins = 200;
+  p_parameters->hist_vmax = 20;
+  strcpy(p_parameters->filename_hist, "velocity-hist.csv");
+  p_parameters->nbins_dih = 75;
+  strcpy(p_parameters->filename_dih_hist, "velocity-dih-hist.csv");
 
   if (p_parameters->r_cut > p_parameters->L.x / 2.0)
     fprintf(stderr, "Warning! r_cut > Lx/2");

@@ -37,10 +37,12 @@
 #include "fileoutput.h" 
 #include "tests.h"
 #include "vec3d.h"
+#include "histogram.h"
 
 // #define RUN_TEST_NB
 #define RUN_TEST_NVE     // ← activa el test NVE
 // #define RUN_TEST_NVT
+#define HISTOGRAM
 
 
 /** 
@@ -146,18 +148,18 @@ int main(void)
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
 
 
-#ifdef RUN_TEST_NVE
-static int have_ref = 0;
-static double Etot0 = 0.0;
-double Etot = Epot + Ekin;
-if (!have_ref) { Etot0 = Etot; have_ref = 1; }
+        #ifdef RUN_TEST_NVE
+        static int have_ref = 0;
+        static double Etot0 = 0.0;
+        double Etot = Epot + Ekin;
+        if (!have_ref) { Etot0 = Etot; have_ref = 1; }
 
-if (step % 1000 == 0) {
-    double drift_rel = fabs(Etot - Etot0) / fmax(1.0, fabs(Etot0));
-    printf("[NVE] step %lu  Etot=%.8e  drift_rel=%.3e\n",
-           (unsigned long)step, Etot, drift_rel);
-}
-#endif
+        if (step % 1000 == 0) {
+            double drift_rel = fabs(Etot - Etot0) / fmax(1.0, fabs(Etot0));
+            printf("[NVE] step %lu  Etot=%.8e  drift_rel=%.3e\n",
+                (unsigned long)step, Etot, drift_rel);
+        }
+        #endif
     
         // Output system state every 'num_dt_pdb' steps
         if (step % parameters.num_dt_pdb == 0) 
@@ -176,6 +178,9 @@ if (step % 1000 == 0) {
         // NEW: write diagnostics to CSV file
         record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
                        Ekin, Epot, T_meas); 
+
+        // Include the data for the histogram
+        write_hist(&parameters, &vectors, step);
     } 
 
 
