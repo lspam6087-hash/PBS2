@@ -203,30 +203,30 @@ void initialise(struct Parameters *p_parameters, struct Vectors *p_vectors, stru
 
 // This function initializes particle positions on a cubic lattice.
 // Particles are placed in a grid with spacing based on the number of particles and the box dimensions.
-//Build a n-butane molecule with 4 particles in already the right geometry
-void build_molecule(struct Parameters *p_parameters, struct Vec3D molecule_center, struct Vectors *p_vectors, int ipart)
+// Build a n-butane molecule with 4 particles in already the right geometry
+void build_molecule(struct Vec3D molecule_center, struct Vectors *p_vectors, int imol)
 {
     //place particle 1 (CH3)
-    p_vectors->r[ipart].x = molecule_center.x - r0;
-    p_vectors->r[ipart].y = molecule_center.y;
-    p_vectors->r[ipart].z = molecule_center.z;
+    p_vectors->r[imol].x = molecule_center.x - r0;
+    p_vectors->r[imol].y = molecule_center.y;
+    p_vectors->r[imol].z = molecule_center.z;
 
     //place particle 2 (CH2)
-    p_vectors->r[ipart + 1].x = molecule_center.x;
-    p_vectors->r[ipart + 1].y = molecule_center.y;
-    p_vectors->r[ipart + 1].z = molecule_center.z;
+    p_vectors->r[imol + 1].x = molecule_center.x;
+    p_vectors->r[imol + 1].y = molecule_center.y;
+    p_vectors->r[imol + 1].z = molecule_center.z;
 
     //place particle 3 (CH2)
     double dx = r0 * cos(theta0);  
     double dy = r0 * sin(theta0);       
-    p_vectors->r[ipart + 2].x = p_vectors->r[ipart + 1].x - dx;
-    p_vectors->r[ipart + 2].y = p_vectors->r[ipart + 1].y + dy;
-    p_vectors->r[ipart + 2].z = molecule_center.z;
+    p_vectors->r[imol + 2].x = p_vectors->r[imol + 1].x - dx;
+    p_vectors->r[imol + 2].y = p_vectors->r[imol + 1].y + dy;
+    p_vectors->r[imol + 2].z = molecule_center.z;
 
     //place particle 4 (CH3)
-    p_vectors->r[ipart + 3].x = p_vectors->r[ipart + 2].x + r0;
-    p_vectors->r[ipart + 3].y = p_vectors->r[ipart + 2].y;
-    p_vectors->r[ipart + 3].z = molecule_center.z;
+    p_vectors->r[imol + 3].x = p_vectors->r[imol + 2].x + r0;
+    p_vectors->r[imol + 3].y = p_vectors->r[imol + 2].y;
+    p_vectors->r[imol + 3].z = molecule_center.z;
 }
 
 
@@ -237,7 +237,7 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
     struct Vec3D dr;  // Displacement vector for positioning particles
     struct Index3D n; // Number of grid cells along each axis
     double dl;        // Lattice spacing
-    int ipart = 0;    // Particle index
+    int imol = 0;     // Particle index
     int imol = 0;     //molecule index
 
     int num_mol = p_parameters->num_part / 4;
@@ -253,10 +253,11 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
         molecule_center.z = 0.5 * p_parameters->L.z;
 
         // place 4 atoms in a straight x-direction chain centred at box centre
-        build_molecule(p_parameters, molecule_center, p_vectors, 0);
+        build_molecule(molecule_center, p_vectors, 0);
         return;
     }
-    
+
+    // Determining parameters for the molecules in the system
     n.i = (int) floor(p_parameters->L.x / 7.0);
     if (n.i < 1) 
         n.i = 1;
@@ -270,8 +271,10 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
     dr.x = p_parameters->L.x / (double)n.i;
     dr.y = p_parameters->L.y / (double)n.j;
     dr.z = p_parameters->L.z / (double)n.k;
-    ipart = 0;
     imol = 0;
+    imol = 0;
+
+    // Calculate the middle of the molecule and building it
     for (size_t i = 0; i < n.i; ++i)
     {
         for (size_t j = 0; j < n.j; ++j)
@@ -287,9 +290,9 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
                 molecule_center.y = (j + 0.5) * dr.y;
                 molecule_center.z = (k + 0.5) * dr.z;
                 
-                build_molecule(p_parameters, molecule_center, p_vectors, ipart);
+                build_molecule(molecule_center, p_vectors, imol);
 
-                ipart += 4;
+                imol += 4;
                 imol++;
             }
         if (imol >= num_mol)

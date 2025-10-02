@@ -62,6 +62,16 @@ void initialise_velocities(struct Parameters *p_parameters, struct Vectors *p_ve
  */
 double box_length_from_density_A(size_t Nmol, double rho_kg_m3);
 
+/**
+ * @brief Builds the molecule with the right orientation
+ * 
+ * @param molecule_center center of the molecule
+ * @param p_vectors used members: r
+ * @param imol index of the molecule 
+ */
+void build_molecule(struct Vec3D molecule_center, struct Vectors *p_vectors, int imol);
+
+
 void initialise_bonds(struct Parameters *p, struct Vectors *v);
 
 #endif /* INITIALISE_H_ */
