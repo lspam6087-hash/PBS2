@@ -78,6 +78,9 @@ struct Parameters
     double hist_vmax;        //!< maximum velocity included in the histogram
     char filename_hist[256]; //!< filename for the .csv file
     size_t nbins_dih;           //!< number of bins for dihedral histogram
+    size_t sample_interval_dih;                 
+    size_t write_interval_dih;                
+    char filename_dih_samples[1024];
     char filename_dih_hist[256];//!< filename for the .csv file for the histogram for dihedrals
     size_t num_dt_restart;   //!< Number of time steps between saves of restart file
     char restart_in_filename[1024];  //!< filename for loaded restart file
@@ -200,5 +203,14 @@ typedef struct {
     unsigned long *counts;      //!< Counts per bin
     unsigned long total_counts; //!< Total samples added
 } VelHist;
+
+/**
+ * @brief MSD struct
+ */
+typedef struct {
+    size_t index;
+    struct Vec3D *r;
+}store;
+
 
 #endif /* TYPES_MD_H_ */

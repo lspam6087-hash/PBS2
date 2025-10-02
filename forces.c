@@ -21,10 +21,14 @@ double calculate_forces(struct Parameters *p_parameters, struct Nbrlist *p_nbrli
 
     // Calculate the forces and accumulate the potential energy from each type of interaction
     double Epot = calculate_forces_bond(p_parameters, p_vectors);
-    // Epot += calculate_forces_angle(p_parameters, p_vectors);
-    // Epot += calculate_forces_dihedral(p_parameters, p_vectors);
-    // Epot += calculate_forces_nb(p_parameters, p_nbrlist, p_vectors);
-
+    Epot += calculate_forces_angle(p_parameters, p_vectors);
+    Epot += calculate_forces_dihedral(p_parameters, p_vectors);
+    Epot += calculate_forces_nb(p_parameters, p_nbrlist, p_vectors);
+    
+    // This is for B5 for the bonded test
+    if (p_nbrlist != NULL && p_parameters->num_part > 4) {
+        Epot += calculate_forces_nb(p_parameters, p_nbrlist, p_vectors);
+    }
     return Epot;
 }
 

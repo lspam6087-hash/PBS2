@@ -360,3 +360,9 @@ double box_length_from_density_A(size_t Nmol, double rho_kg_m3)
     double L_m  = cbrt(V_m3) * 1e10;
     return L_m;
 }
+
+void initialise_bonds(struct Parameters *p, struct Vectors *v)
+{
+    struct Nbrlist dummy = (struct Nbrlist){0}; // NB off en el test
+    initialise_structure(p, v, &dummy);
+}

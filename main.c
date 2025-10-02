@@ -38,11 +38,15 @@
 #include "tests.h"
 #include "vec3d.h"
 #include "histogram.h"
+#include "MSD.h"
 
-// #define RUN_TEST_NB
-#define RUN_TEST_NVE     // ← activa el test NVE
-// #define RUN_TEST_NVT
-#define HISTOGRAM
+//#define RUN_TEST_NB
+//#define RUN_TEST_NVE 
+//#define RUN_TEST_NVT
+//#define RUN_TEST_BONDED
+//#define DIAGNOSTICS
+//#define HISTOGRAM
+#define TORSION_HISTOGRAM
 
 
 /** 
@@ -89,6 +93,11 @@ int main(void)
     return 0; // exit program after the test
     #endif
 
+    #ifdef RUN_TEST_BONDED
+    // Ejecutar el test de fuerzas bonded (con diferencias finitas)
+    run_bonded_fd_test(&parameters, &vectors);
+    return 0; // Salir después del test
+    #endif
 
     // Check if a restart is required
     if (parameters.load_restart == 1) 
@@ -178,10 +187,26 @@ int main(void)
         // NEW: write diagnostics to CSV file
         record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
                        Ekin, Epot, T_meas); 
-
+        
+        #ifdef HISTOGRAM
         // Include the data for the histogram
         write_hist(&parameters, &vectors, step);
+        #endif
+
+        // initialize_msd(&parameters, &vectors);
     } 
+
+    #ifdef HISTOGRAM
+        system("python plotting.py");  // o "python3" si tu sistema lo requiere
+    #endif
+
+    #ifdef TORSION_HISTOGRAM
+        system("python plot_torsion.py");  // o "python3" si tu sistema lo requiere
+    #endif
+
+    #ifdef DIAGNOSTICS
+        system("python plot_diagnostics.py");  // o "python3" si tu sistema lo requiere
+    #endif
 
 
 

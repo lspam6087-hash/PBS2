@@ -45,6 +45,11 @@ p_parameters->epsilon[1] = 46.0; // CH2 (K, en ε/kB)
   strcpy(p_parameters->filename_hist, "velocity-hist.csv");
   p_parameters->nbins_dih = 75;
   strcpy(p_parameters->filename_dih_hist, "velocity-dih-hist.csv");
+  p_parameters->nbins_dih           = 72;                 
+  p_parameters->sample_interval_dih = 10;                 
+  p_parameters->write_interval_dih  = 500;                
+  strcpy(p_parameters->filename_dih_samples, "torsion_phi.dat");
+  strcpy(p_parameters->filename_dih_hist,    "torsion_hist.csv");
 
   if (p_parameters->r_cut > p_parameters->L.x / 2.0)
     fprintf(stderr, "Warning! r_cut > Lx/2");

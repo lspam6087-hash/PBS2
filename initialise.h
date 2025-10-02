@@ -62,4 +62,6 @@ void initialise_velocities(struct Parameters *p_parameters, struct Vectors *p_ve
  */
 double box_length_from_density_A(size_t Nmol, double rho_kg_m3);
 
+void initialise_bonds(struct Parameters *p, struct Vectors *v);
+
 #endif /* INITIALISE_H_ */
