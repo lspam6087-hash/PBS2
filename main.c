@@ -125,8 +125,12 @@ int main(void)
 
     // Step 3: Build the neighbor list for non-bonded interactions
     
-    if (parameters.num_part > 4) 
-    {
+    // Rebuild neighbor list if needed
+    if (parameters.num_part == 2 || parameters.num_part > 4) {
+        update_nbrlist(&parameters, &vectors, &nbrlist);
+    } 
+    
+    if (parameters.num_part == 2 || parameters.num_part > 4) {
         build_nbrlist(&parameters, &vectors, &nbrlist);
     }
     
@@ -169,6 +173,10 @@ int main(void)
         if (parameters.num_part == 2 || parameters.num_part > 4) {
             update_nbrlist(&parameters, &vectors, &nbrlist);
         } 
+        
+        if (parameters.num_part == 2 || parameters.num_part > 4) {
+            build_nbrlist(&parameters, &vectors, &nbrlist);
+        }
 
         // Calculate forces for the current configuration (bonded forces if implemented)
         Epot = calculate_forces(&parameters, &nbrlist, &vectors); 
