@@ -114,13 +114,13 @@ void save_restart(struct Parameters *p_parameters, struct Vectors *p_vectors)
 }
 
 // load arrays in vectors from binary file
-void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors)
+void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors, struct MSD *p_msd)
 {
   FILE* p_file = fopen( p_parameters->restart_in_filename, "rb" );
   size_t num_part;
   fread(&num_part, sizeof(size_t), 1, p_file);
   size_t sz = num_part*sizeof(struct Vec3D);
-  alloc_vectors(p_vectors,num_part);
+  alloc_vectors(p_vectors, p_parameters, p_msd);
   p_parameters->num_part = num_part;
   fread(p_vectors->r, sz, 1, p_file);
   fread(p_vectors->v, sz, 1, p_file);
@@ -171,3 +171,31 @@ void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double t
 
     fclose(fp_diag);
 }
+
+void record_msd_csv(struct Parameters *p_parameters, struct MSD *p_msd)
+{
+    FILE *fp_msd;
+    char filename[1024];
+
+    snprintf(filename, 1024, "%s", p_parameters->MSD_filename);
+    fp_msd = fopen(filename, "w");
+    if (!fp_msd) {
+        printf("Error opening MSD file %s!\n", filename);
+        return;
+    }
+
+    //print header
+    fprintf(fp_msd, "# num_dtau=%zu dt=%.6e ncor=%zu\n", p_parameters->num_dtau, p_parameters->dt, p_parameters->ncor);
+    fprintf(fp_msd, "time_lag,MSD,count\n");
+
+    //output finilased msd
+    for (size_t icor = 0; icor < p_parameters->ncor; icor++) {
+        if (p_msd->count[icor] > 0) {
+            double tau = icor * p_parameters->num_dtau * p_parameters->dt;
+            double msd = p_msd->cor[icor] / (double)p_msd->count[icor];
+            fprintf(fp_msd, "%.6e,%.6e,%zu\n", tau, msd, p_msd->count[icor]);
+        }
+    }
+    fclose(fp_msd);
+}
+

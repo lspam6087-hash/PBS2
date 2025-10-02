@@ -50,6 +50,10 @@ p_parameters->epsilon[1] = 46.0; // CH2 (K, en ε/kB)
   p_parameters->write_interval_dih  = 500;                
   strcpy(p_parameters->filename_dih_samples, "torsion_phi.dat");
   strcpy(p_parameters->filename_dih_hist,    "torsion_hist.csv");
+  strcpy(p_parameters->MSD_filename,         "MSD.csv");
+
+  p_parameters->ncor = 2000;
+  p_parameters->num_dtau = 10;
 
   if (p_parameters->r_cut > p_parameters->L.x / 2.0)
     fprintf(stderr, "Warning! r_cut > Lx/2");

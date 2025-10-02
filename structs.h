@@ -85,6 +85,9 @@ struct Parameters
     size_t num_dt_restart;   //!< Number of time steps between saves of restart file
     char restart_in_filename[1024];  //!< filename for loaded restart file
     char restart_out_filename[1024]; //!< filename for saved restart file
+    int ncor;
+    char MSD_filename[1024];
+    int num_dtau;
 };
 
 /**
@@ -207,10 +210,13 @@ typedef struct {
 /**
  * @brief MSD struct
  */
-typedef struct {
-    size_t index;
-    struct Vec3D *r;
-}store;
+struct MSD{
+    size_t frame;
+    double *cor;
+    size_t *count;
+    struct Vec3D *prev;
+    struct Vec3D *store;
+};
 
 
 #endif /* TYPES_MD_H_ */

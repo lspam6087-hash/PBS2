@@ -33,7 +33,7 @@ void save_restart(struct Parameters *p_parameters, struct Vectors *p_vectors);
  * @param p_parameters 
  * @param p_vectors 
  */
-void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors);
+void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors, struct MSD *p_msd);
 
 /** LAURA
  * @brief Output diagnostic data (energies, temperature) to a CSV file.
@@ -50,6 +50,9 @@ void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors);
  */
 void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double time,
                             double kin_energy, double pot_energy, double temperature);
+
+
+void record_msd_csv(struct Parameters *p_parameters, struct MSD *p_msd);
 
 
 #endif /* FILEOUTPUT_H_ */

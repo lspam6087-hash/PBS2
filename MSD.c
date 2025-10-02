@@ -1,58 +1,115 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "structs.h"
+#include "Vec3D.h"
+#include "MSD.h"
 
-// void initialize_msd(struct Parameters *p_parameters, struct Vectors *p_vectors){
-//     size_t N = p_parameters->num_part;
-//     size_t N_frames = p_parameters->num_dt_steps;
-//     size_t frame = 0;
-//     struct Vec3D *r = p_vectors->r;
-//     double *cor = malloc((size_t)N_frames * sizeof(double));
-//     int *count = malloc((size_t)N_frames * sizeof(double));
-//     double *store = malloc((size_t)N * 3 * N_frames * sizeof(double));
+//Calculate COM of a molecule
+struct Vec3D com_molecule(struct Parameters *p_parameters, struct Vectors *p_vectors, int molecule_number)
+{
+    struct Vec3D com = v3(0.0, 0.0, 0.0);
+    double mtot = 0.0;
+    struct Vec3D L = p_parameters->L;
+    int molecule_index = 4 * molecule_number;
 
-//     // access element (i, d, f)
-//     #define STORE(i,d,f) store[((i)*3 + (d)) * N_frames + (f)]
+    //Look at first particle in molecule
+    struct Vec3D r0 = p_vectors->r[molecule_index];
+    double m0 = p_parameters->mass[p_vectors->type[molecule_index]];
+    com = add(com, scl(m0, r0));
+    mtot += m0;
 
-//     for (size_t i = 0; i < N; i++) {
-//         for (int d = 0; d < 3; d++) {
-//             for (size_t f = 0; f < N_frames; f++) {
-//                 STORE(i,d,f) = 0.0;
-//             }
-//         }
-//     }
-        
-//     // reset variables
-//     frame = 0;
-//     for (int lag = 0; lag < N_frames; lag++) {
-//         cor[lag] = 0.0;
-//         count[lag] = 0;
-//     }
+    //Look at other atoms while applying minimum image convention
+    for (int i = 1; i < 4; i++) 
+    {
+        int j = molecule_index + i;   
+        int type = p_vectors->type[j];
+        double mass = p_parameters->mass[type];
 
-//     for (int i = 0; i < N; i++) {
-//         for (int d = 0; d < 3; d++) {
-//             for (int f = 0; f < N_frames; f++) {
-//                 STORE[i][d][f] = 0.0;
-//             }
-//         }
-//     }
-// }
+        struct Vec3D rij;
+        rij.x = p_vectors->r[j].x - r0.x;
+        rij.x = rij.x - L.x * floor(rij.x / L.x + 0.5);
+        rij.y = p_vectors->r[j].y - r0.y;
+        rij.y = rij.y - L.y * floor(rij.y / L.y + 0.5);
+        rij.z = p_vectors->r[j].z - r0.z;
+        rij.z = rij.z - L.z * floor(rij.z / L.z + 0.5);
 
-// void update_msd(struct Parameters *p_parameters, struct Vectors *p_vectors){
-//     size_t N = p_parameters->num_part;
-//     size_t N_frames = p_parameters->num_dt_steps;
-//     size_t frame = 0;
-//     struct Vec3D *r = p_vectors->r;
-//     double cor[N_frames];
-//     int count[N_frames];
-//     double store[N][3][N_frames];
+        struct Vec3D rj = add(r0, rij);
 
-//     // store current positions into buffer
-//     for (int i = 0; i < N; i++) {
-//         store[i][0][frame] = r[i].x; // x
-//         store[i][1][frame] = r[i].y; // y
-//         store[i][2][frame] = r[i].x; // z
-//     }
+        com = add(com, scl(mass, rj));
+        mtot += mass;
+    }
 
-//     frame += 1; // increment frame counter
-// }
+    return scl(1.0/mtot, com);
+}
+
+
+//Initialise MSD
+void initialise_msd(struct Parameters *p_parameters, struct Vectors *p_vectors, struct MSD *p_msd)
+{
+    int molecules = p_parameters->num_part / 4;
+    p_msd->frame = 0;
+
+    //zero cor and count array
+    for (size_t i = 0; i < p_parameters->ncor; i++) {
+        p_msd->cor[i]   = 0.0;
+        p_msd->count[i] = 0;
+    }
+
+    //store first COM positions
+    for (int i = 0; i < molecules; i++) {
+        struct Vec3D com = com_molecule(p_parameters, p_vectors, i);
+        p_msd->prev[i] = com;
+        p_msd->store[i] = com;
+    }
+
+    p_msd->frame++;
+}
+
+//Update MSD
+void update_msd(struct Parameters *p_parameters, struct Vectors *p_vectors, struct MSD *p_msd)
+{
+    int molecules = p_parameters->num_part / 4;
+    size_t maxcor = p_parameters->ncor - 1;
+        if (p_msd->frame < p_parameters->ncor)
+            maxcor = p_msd->frame;
+
+    //current frame
+    size_t curframe = p_msd->frame % p_parameters->ncor;
+
+    //loop over all molecules
+    for (int m = 0; m < molecules; m++) 
+    {
+        struct Vec3D com = com_molecule(p_parameters, p_vectors, m);
+
+        //displacement of molecule with minimum image convention
+        struct Vec3D d = sub(com, p_msd->prev[m]);
+        d.x = d.x - p_parameters->L.x * floor(d.x / p_parameters->L.x + 0.5);
+        d.y = d.y - p_parameters->L.y * floor(d.y / p_parameters->L.y + 0.5);
+        d.z = d.z - p_parameters->L.z * floor(d.z / p_parameters->L.z + 0.5);
+
+        //store COM
+        struct Vec3D com_unfold = add(p_msd->prev[m], d);
+        p_msd->store[curframe * molecules + m] = com_unfold;
+        p_msd->prev[m] = com_unfold; //store previous for next step
+
+        //correlate with older frames
+        for (size_t icor = 0; icor <= maxcor; icor++) 
+        {
+            size_t icorframe = (curframe + p_parameters->ncor - icor) % p_parameters->ncor;
+            struct Vec3D old = p_msd->store[icorframe * molecules + m];
+
+            double dx = com_unfold.x - old.x;
+            double dy = com_unfold.y - old.y;
+            double dz = com_unfold.z - old.z;
+            double dr2 = dx*dx + dy*dy + dz*dz;
+
+            p_msd->cor[icor]   += dr2;
+            p_msd->count[icor] += 1;
+        }
+
+    }
+
+    // advance frame counter
+    p_msd->frame++;
+}

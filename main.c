@@ -37,16 +37,20 @@
 #include "fileoutput.h" 
 #include "tests.h"
 #include "vec3d.h"
+#include "test_bonded.h"
 #include "histogram.h"
+#include "torsion_histogram.h"
 #include "MSD.h"
 
 //#define RUN_TEST_NB
-//#define RUN_TEST_NVE 
-//#define RUN_TEST_NVT
-//#define RUN_TEST_BONDED
-//#define DIAGNOSTICS
-//#define HISTOGRAM
-#define TORSION_HISTOGRAM
+#define RUN_TEST_NVE 
+// #define RUN_TEST_NVT
+// #define RUN_TEST_BONDED
+// #define DIAGNOSTICS
+// #define HISTOGRAM
+// #define TORSION_HISTOGRAM
+#define MSD_CALC
+
 
 
 /** 
@@ -70,6 +74,7 @@ int main(void)
     struct Vectors vectors; 
     struct Parameters parameters; 
     struct Nbrlist nbrlist; 
+    struct MSD msd;
     size_t step; 
     double Ekin, Epot, time, T_meas, T_therm; 
     
@@ -83,7 +88,7 @@ int main(void)
     parameters.L = (struct Vec3D){L, L, L};
 
     // Step 2: Allocate memory for particles, forces, and neighbor lists
-    alloc_memory(&parameters, &vectors, &nbrlist); 
+    alloc_memory(&parameters, &vectors, &nbrlist, &msd); 
 
     #ifdef RUN_TEST_NB
     // Run non-bonded force verification test
@@ -93,16 +98,19 @@ int main(void)
     return 0; // exit program after the test
     #endif
 
+
+
     #ifdef RUN_TEST_BONDED
     // Ejecutar el test de fuerzas bonded (con diferencias finitas)
     run_bonded_fd_test(&parameters, &vectors);
     return 0; // Salir después del test
     #endif
 
+
     // Check if a restart is required
     if (parameters.load_restart == 1) 
     { 
-        load_restart(&parameters, &vectors); 
+        load_restart(&parameters, &vectors, &msd); 
         initialise_structure(&parameters, &vectors, &nbrlist); 
         step = 0; 
         time = 0.0; 
@@ -116,13 +124,22 @@ int main(void)
     }
 
     // Step 3: Build the neighbor list for non-bonded interactions
-    build_nbrlist(&parameters, &vectors, &nbrlist); 
+    
+    if (parameters.num_part > 4) 
+    {
+        build_nbrlist(&parameters, &vectors, &nbrlist);
+    }
+    
 
     // Step 4: Calculate initial forces (non-bonded and bonded if implemented)
     Epot = calculate_forces(&parameters, &nbrlist, &vectors); 
 
     // Output initial particle positions in PDB format
     record_trajectories_pdb(1, &parameters, &vectors, time); 
+
+    #ifdef MSD_CALC
+    initialise_msd(&parameters, &vectors, &msd);
+    #endif
 
     // Main MD loop using velocity-Verlet integration
     while (step < parameters.num_dt_steps) 
@@ -147,8 +164,11 @@ int main(void)
         // Apply boundary conditions
         boundary_conditions(&parameters, &vectors); 
 
+
         // Rebuild neighbor list if needed
-        update_nbrlist(&parameters, &vectors, &nbrlist); 
+        if (parameters.num_part == 2 || parameters.num_part > 4) {
+            update_nbrlist(&parameters, &vectors, &nbrlist);
+        } 
 
         // Calculate forces for the current configuration (bonded forces if implemented)
         Epot = calculate_forces(&parameters, &nbrlist, &vectors); 
@@ -169,7 +189,11 @@ int main(void)
                 (unsigned long)step, Etot, drift_rel);
         }
         #endif
-    
+        
+        #ifdef MSD_CALC
+        update_msd(&parameters, &vectors, &msd);
+        #endif
+
         // Output system state every 'num_dt_pdb' steps
         if (step % parameters.num_dt_pdb == 0) 
             record_trajectories_pdb(0, &parameters, &vectors, time); 
@@ -179,7 +203,7 @@ int main(void)
             save_restart(&parameters, &vectors); 
 
         /// \todo Implement on-the-fly analysis of velocity distribution, torsion angle distribution and mean-square displacement
-
+        write_torsion_samples(&parameters, &vectors, step);
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
         printf("Step %lu, Time %.5f, Epot %.2f, Ekin %.2f, Etot %.2f, Tmeas %.2f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
@@ -187,34 +211,36 @@ int main(void)
         // NEW: write diagnostics to CSV file
         record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
                        Ekin, Epot, T_meas); 
-        
+
         #ifdef HISTOGRAM
         // Include the data for the histogram
         write_hist(&parameters, &vectors, step);
         #endif
 
-        // initialize_msd(&parameters, &vectors);
+        #ifdef TORSION_HISTOGRAM
+        // write_torsion_samples(&parameters, &vectors, step);
+        #endif
     } 
 
     #ifdef HISTOGRAM
-        system("python plotting.py");  // o "python3" si tu sistema lo requiere
-    #endif
+        system("python plotting.py");  
+        #endif
 
     #ifdef TORSION_HISTOGRAM
-        system("python plot_torsion.py");  // o "python3" si tu sistema lo requiere
-    #endif
+        system("python plot_torsion.py");  
+        #endif
 
     #ifdef DIAGNOSTICS
-        system("python plot_diagnostics.py");  // o "python3" si tu sistema lo requiere
-    #endif
-
-
+        system("python plot_diagnostics.py");
+        #endif
 
     // Save final state
     save_restart(&parameters, &vectors); 
 
+    record_msd_csv(&parameters, &msd);
+
     // Step 5: Free memory and clean up
-    free_memory(&vectors, &nbrlist); 
+    free_memory(&vectors, &nbrlist, &msd); 
 
     return 0; 
 }
