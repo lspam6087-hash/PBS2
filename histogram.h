@@ -5,6 +5,13 @@
 #include <stddef.h>
 #include "structs.h"
 
+/**
+ * @brief Set the histogram struct used in the simulation.
+ * 
+ * @param nbins number of bins
+ * @param vmin minimum speed
+ * @param vmax maximum speed
+ */
 VelHist *vh_create(size_t nbins, double vmin, double vmax);
 void vh_destroy(VelHist *h);
 void vh_reset(VelHist *h);

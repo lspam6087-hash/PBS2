@@ -5,21 +5,10 @@
 #include "structs.h"
 #include "fileoutput.h"
 
-/**
- * @brief Writes particle trajectories to a .pdb file for visualization.
- *
- * This function creates or appends to a PDB file containing the positions
- * of all particles at a given simulation time step. The output follows the
- * standard PDB format with MODEL/ENDMDL blocks, including a CRYST1 record
- * defining the simulation box and HETATM records for each particle.
- *
- * - If reset = 1 → the file is overwritten (new trajectory).
- * - If reset = 0 → new frames are appended to the same file.
- *
- * The resulting .pdb file can be visualized with molecular viewers
- * (e.g., OVITO, VMD) to analyze the particle trajectories over time.
- */
-
+// Write the particle positions to a pdf file
+// The filename (without extension) is given by p_parameters->filename_pdb.
+// If reset = 1 the data is written to the file deleting data it possibly contained.
+// If reset = 0 the data is appended.
 void record_trajectories_pdb(int reset, struct Parameters *p_parameters, struct Vectors *p_vectors, double time)
 {
   FILE *fp_traj;
@@ -48,30 +37,10 @@ void record_trajectories_pdb(int reset, struct Parameters *p_parameters, struct 
   fclose(fp_traj);
 }
 
-/**
- * @brief Functions for writing trajectories and saving/restoring simulation state.
- *
- * - record_trajectories_xyz():
- *   Writes particle positions to a .xyz file in XYZ format.
- *   Each frame starts with the number of particles, followed by a comment line
- *   (here containing the simulation time), and then one line per particle with
- *   atom type ("C") and Cartesian coordinates.
- *   - If reset = 1 → file is overwritten.
- *   - If reset = 0 → new frames are appended.
- *
- * - save_restart():
- *   Saves the current state of the simulation (number of particles, positions,
- *   velocities, and forces) into a binary file. This enables restarting the
- *   simulation from the same point later.
- *
- * - load_restart():
- *   Reads the saved state from a binary file and restores particle data into
- *   memory (allocating vectors as needed). Updates num_part accordingly.
- *
- * Together, these functions allow both trajectory visualization (XYZ files)
- * and checkpointing/restarting (binary restart files) of the simulation.
- */
-
+// Write the particle positions to a xyz file
+// The filename (without extension) is given by p_parameters->filename_xyz.
+// If reset = 1 the data is written to the file deleting data it possibly contained.
+// If reset = 0 the data is appended.
 void record_trajectories_xyz(int reset, struct Parameters *p_parameters, struct Vectors *p_vectors, double time)
 {
   FILE *fp_traj;
@@ -128,42 +97,20 @@ void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors, st
   fclose(p_file);
 }
 
-/**
- * @brief Simulation output pipeline
- *
- * The simulation produces two main types of output:
- *
- * 1. Trajectory files:
- *    - PDB format (.pdb): full molecular-style output with box information (CRYST1)
- *      and MODEL/ENDMDL blocks. Useful for visualization with OVITO, VMD, etc.
- *    - XYZ format (.xyz): simpler output (number of particles + coordinates per frame).
- *      Easy to parse with analysis scripts or visualize in OVITO.
- *
- * 2. Restart files:
- *    - Binary files containing the number of particles, positions, velocities,
- *      and forces. These enable checkpointing and restarting a simulation run
- *      without starting from the beginning.
- *
- * ➝ Input: Simulation parameters + initial particle positions/velocities.
- * ➝ Process: Time integration and force calculations update the system.
- * ➝ Output: 
- *      - .pdb / .xyz files → for visualization and analysis.
- *      - restart file      → for continuing the simulation later.
- */
-
 // Write diagnostic data (energies, temperature) to CSV file LAURA B1
-void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double time,
-                            double kin_energy, double pot_energy, double temperature)
+void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double time, double kin_energy, double pot_energy, double temperature)
 {
     FILE *fp_diag;
     char filename[1024];
     snprintf(filename, 1024, "%s%s", p_parameters->filename_diag, ".csv");
 
     if (reset == 1) {
-        fp_diag = fopen(filename, "w");
-        fprintf(fp_diag, "time,kinetic_energy,potential_energy,total_energy,temperature\n");
+      // Print the header
+      fp_diag = fopen(filename, "w");
+      fprintf(fp_diag, "time,kinetic_energy,potential_energy,total_energy,temperature\n");
     } else {
-        fp_diag = fopen(filename, "a");
+      // Print data to the file
+      fp_diag = fopen(filename, "a");
     }
 
     fprintf(fp_diag, "%f,%f,%f,%f,%f\n",

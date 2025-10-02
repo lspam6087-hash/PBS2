@@ -42,14 +42,16 @@
 #include "torsion_histogram.h"
 #include "MSD.h"
 
-//#define RUN_TEST_NB
-#define RUN_TEST_NVE 
-// #define RUN_TEST_NVT
-// #define RUN_TEST_BONDED
-// #define DIAGNOSTICS
-// #define HISTOGRAM
-// #define TORSION_HISTOGRAM
-#define MSD_CALC
+
+// === (Un)comment the following commands to run different tests ===
+// #define RUN_TEST_NB          // test the non-bonded forces           
+// #define RUN_TEST_NVE         // test the NVE
+// #define RUN_TEST_NVT         // test the NVT
+// #define RUN_TEST_BONDED      // test the bonded forces
+// #define DIAGNOSTICS          // plot the diagnostics
+// #define HISTOGRAM            // determine velocities and plot them
+// #define TORSION_HISTOGRAM    // determine the torsional forces and plot them 
+// #define MSD_CALC             // calculcate and plot the MSD
 
 
 
@@ -83,8 +85,9 @@ int main(void)
     set_parameters(&parameters); 
 
     // Determining the box size by the desired density
+    double dens_desired = 600.0;
     size_t Nmol = parameters.num_part / 4;
-    double L = box_length_from_density_A(Nmol, 600.0);  
+    double L = box_length_from_density_A(Nmol, dens_desired);  
     parameters.L = (struct Vec3D){L, L, L};
 
     // Step 2: Allocate memory for particles, forces, and neighbor lists
@@ -98,14 +101,11 @@ int main(void)
     return 0; // exit program after the test
     #endif
 
-
-
     #ifdef RUN_TEST_BONDED
     // Ejecutar el test de fuerzas bonded (con diferencias finitas)
     run_bonded_fd_test(&parameters, &vectors);
     return 0; // Salir después del test
     #endif
-
 
     // Check if a restart is required
     if (parameters.load_restart == 1) 
@@ -124,6 +124,7 @@ int main(void)
     }
 
     // Step 3: Build the neighbor list for non-bonded interactions
+    // The extra checks need to make the code robust to the different tests
     
     // Rebuild neighbor list if needed
     if (parameters.num_part == 2 || parameters.num_part > 4) {
@@ -155,7 +156,7 @@ int main(void)
         /// \todo Implement the use of type-dependent masses
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
 
-        T_meas = calc_temp(&parameters, Ekin); // Calculate instantaneous temperature LAURA B1
+        T_meas = calc_temp(&parameters, Ekin); // Calculate instantaneous temperature
 
         /// \todo Implement and apply the Berendsen thermostat to maintain temperature (dynamics.c)
         #ifndef RUN_TEST_NVT
@@ -170,6 +171,7 @@ int main(void)
 
 
         // Rebuild neighbor list if needed
+        // The extra checks need to make the code robust to the different tests
         if (parameters.num_part == 2 || parameters.num_part > 4) {
             update_nbrlist(&parameters, &vectors, &nbrlist);
         } 
@@ -186,20 +188,21 @@ int main(void)
 
 
         #ifdef RUN_TEST_NVE
-        static int have_ref = 0;
-        static double Etot0 = 0.0;
-        double Etot = Epot + Ekin;
-        if (!have_ref) { Etot0 = Etot; have_ref = 1; }
+            static int have_ref = 0;
+            static double Etot0 = 0.0;
+            double Etot = Epot + Ekin;
+            if (!have_ref) { Etot0 = Etot; have_ref = 1; }
 
-        if (step % 1000 == 0) {
-            double drift_rel = fabs(Etot - Etot0) / fmax(1.0, fabs(Etot0));
-            printf("[NVE] step %lu  Etot=%.8e  drift_rel=%.3e\n",
-                (unsigned long)step, Etot, drift_rel);
-        }
+            if (step % 1000 == 0) {
+                double drift_rel = fabs(Etot - Etot0) / fmax(1.0, fabs(Etot0));
+                printf("[NVE] step %lu  Etot=%.8e  drift_rel=%.3e\n",
+                    (unsigned long)step, Etot, drift_rel);
+            }
         #endif
         
         #ifdef MSD_CALC
-        update_msd(&parameters, &vectors, &msd);
+            // Include the data for the histogram
+            update_msd(&parameters, &vectors, &msd);
         #endif
 
         // Output system state every 'num_dt_pdb' steps
@@ -211,7 +214,16 @@ int main(void)
             save_restart(&parameters, &vectors); 
 
         /// \todo Implement on-the-fly analysis of velocity distribution, torsion angle distribution and mean-square displacement
-        write_torsion_samples(&parameters, &vectors, step);
+        #ifdef HISTOGRAM
+            // Include the data for the histogram
+            write_hist(&parameters, &vectors, step);
+        #endif
+
+        #ifdef TORSION_HISTOGRAM
+            // Include the data for the torsion histogram
+            write_torsion_samples(&parameters, &vectors, step);
+        #endif
+
         // Print to the screen to monitor the progress of the simulation
         /// \todo Write the output (also) to file, and extend the output with temperature
         printf("Step %lu, Time %.5f, Epot %.2f, Ekin %.2f, Etot %.2f, Tmeas %.2f\n", (long unsigned)step, time, Epot, Ekin, Epot + Ekin, T_meas);
@@ -219,15 +231,6 @@ int main(void)
         // NEW: write diagnostics to CSV file
         record_diagnostics_csv((step == 1) ? 1 : 0, &parameters, time,
                        Ekin, Epot, T_meas); 
-
-        #ifdef HISTOGRAM
-        // Include the data for the histogram
-        write_hist(&parameters, &vectors, step);
-        #endif
-
-        #ifdef TORSION_HISTOGRAM
-        // write_torsion_samples(&parameters, &vectors, step);
-        #endif
     } 
 
     #ifdef HISTOGRAM
@@ -252,33 +255,3 @@ int main(void)
 
     return 0; 
 }
-
-/*
- * General workflow of the Molecular Dynamics simulation:
- *
- * 1. Initialization
- *    - Read simulation parameters (dt, number of steps, masses, σ, ε, cutoff, etc.).
- *    - Allocate memory for positions, velocities, forces, and types.
- *    - Initialize particle positions and velocities (or load from restart).
- *    - Build the initial neighbor list.
- *    - Compute the initial forces and potential energy.
- *
- * 2. Main simulation loop (repeated every time step)
- *    a) Update velocities by half a time step using the current forces.
- *    b) Apply the thermostat (Berendsen) to control the temperature.
- *    c) Update particle positions by a full time step.
- *    d) Apply boundary conditions (periodic box).
- *    e) Update the neighbor list if required.
- *    f) Recompute forces and potential energy at the new positions.
- *    g) Complete the second half-step velocity update.
- *    h) Calculate instantaneous temperature from the kinetic energy.
- *    i) Output system state (trajectories, diagnostics, restart files).
- *    j) Print progress information to the screen.
- *
- * 3. Finalization
- *    - Save the final state to a restart file.
- *    - Free allocated memory.
- *
- * In summary: initialization → (velocity-Verlet integration + thermostat + I/O) → finalization.
- */
-

@@ -35,7 +35,7 @@ void save_restart(struct Parameters *p_parameters, struct Vectors *p_vectors);
  */
 void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors, struct MSD *p_msd);
 
-/** LAURA
+/** 
  * @brief Output diagnostic data (energies, temperature) to a CSV file.
  * 
  * Writes one line per timestep containing time, kinetic energy, potential energy,
@@ -48,11 +48,14 @@ void load_restart(struct Parameters *p_parameters, struct Vectors *p_vectors, st
  * @param pot_energy potential energy at this step
  * @param temperature instantaneous temperature at this step
  */
-void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double time,
-                            double kin_energy, double pot_energy, double temperature);
+void record_diagnostics_csv(int reset, struct Parameters *p_parameters, double time, double kin_energy, double pot_energy, double temperature);
 
-
+/** 
+ * @brief Output MSD data to a CSV file.
+ * 
+ * @param p_parameters used members: MSD_filename, num_dtau, dt
+ * @param P_msd used members: count, cor
+ */
 void record_msd_csv(struct Parameters *p_parameters, struct MSD *p_msd);
-
 
 #endif /* FILEOUTPUT_H_ */

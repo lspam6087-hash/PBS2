@@ -62,7 +62,9 @@ double calculate_forces_bond(struct Parameters *p_parameters, struct Vectors *p_
         rij.z = rij.z - L.z * floor(rij.z / L.z + 0.5);
 
     /// \todo (done) Provide the bond force calculation and assign forces to particles i and j
-        double rij_sq = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
+        double rij_sq = norm(rij);
+
+        // Preventing unphysical values
         if (rij_sq < 1e-8) rij_sq = 1e-8;
 
         fi.x = -k_b * (rij_sq - r0) * (rij.x/rij_sq);
@@ -120,14 +122,16 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         rkj.z = rkj.z - L.z * floor(rkj.z / L.z + 0.5);
 
     /// \todo (done) Provide the angle force calculation and assign forces to particles i, j, and k
-        double rij_sq = (rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
-        double rkj_sq = (rkj.x*rkj.x + rkj.y*rkj.y + rkj.z*rkj.z);
+        double rij_sq = norm(rij);
+        double rkj_sq = norm(rkj);
 
+        // Preventing unphysical values
         if (rij_sq < 1e-8) rij_sq = 1e-8;
         if (rkj_sq < 1e-8) rkj_sq = 1e-8;
 
-        double cos_theta = (rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(rij_sq*rkj_sq);
-
+        double cos_theta = dot(rij, rkj) / sqrt(rij_sq*rkj_sq);
+        
+        // Preventing unphysical values
         if (cos_theta > 1) cos_theta = 1;
         if (cos_theta < -1) cos_theta = -1;
 
@@ -136,6 +140,7 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
         double dtheta = theta - theta0;
         double sin_theta = sin(theta);
 
+        // Preventing unphysical values
         if (fabs(sin_theta) < 1e-8) 
         {
             if (sin_theta >= 0.0) 
@@ -144,7 +149,6 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
                 sin_theta = -1e-8;  
         }
 
-        // double theta = acos((rij.x*rkj.x + rij.y*rkj.y + rij.z*rkj.z) / sqrt(rij_sq*rkj_sq));
         double prefac = k_theta * dtheta / sin_theta;
 
         fi.x = (prefac / rij_sq) * (rkj.x - (cos_theta*rij.x));
@@ -171,6 +175,7 @@ double calculate_forces_angle(struct Parameters *p_parameters, struct Vectors *p
 }
 
 // This function calculates dihedral-torsion forces based on the positions of four connected particles.
+// It uses the minimum image convention and computes the forces resulting from the dihedral-torsion interaction.
 double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors *p_vectors)
 {
     double Epot = 0.0;
@@ -182,7 +187,7 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
     struct Vec3D rij, rkj, rkl;
     struct Vec3D fi, fj, fk, fl = {0.0, 0.0, 0.0};
 
-    // --- RB coefficients (in units of kB*T). Move to Parameters if pref.
+    // coefficients (in units of kB*T)
     const double c0 = 1010.0;
     const double c1 = -2018.9;
     const double c2 = 136.4;
@@ -216,11 +221,13 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         rkl.z = r[l].z - r[k].z; 
         rkl.z -= L.z * floor(rkl.z / L.z + 0.5);
 
+        /// \todo Provide the dihedral-torsion force calculation and assign forces to particles i, j, k, and l
         struct Vec3D nj = cross(rij, rkj);
         struct Vec3D nk = cross(rkj, rkl);
         double nj_mag = norm(nj);
         double nk_mag = norm(nk);
 
+        // Preventing unphysical values
         if (nj_mag < 1e-2) nj_mag = 1e-2;
         if (nk_mag < 1e-2) nk_mag = 1e-2;
 
@@ -228,6 +235,8 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         struct Vec3D nk_hat = scl(1.0/ nk_mag, nk);
 
         double cos_phi = dot(nj_hat, nk_hat);
+
+        // Preventing unphysical values
         if (cos_phi >  1.0) cos_phi =  1.0;
         if (cos_phi < -1.0) cos_phi = -1.0;
 
@@ -243,7 +252,6 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
         struct Vec3D grad_kj_2 = scl(dot(rkj, rkl) * dot(rij, nk_hat) / (nj_mag * nk_mag), nk_hat);
         struct Vec3D grad_kj = add(grad_kj_1, grad_kj_2);
 
-        // Atom gradient calculations
         struct Vec3D grad_i = grad_ij;
         struct Vec3D grad_j = add(scl(-1.0, grad_ij), scl(-1.0, grad_kj));
         struct Vec3D grad_k = add(grad_kj, grad_kl);
@@ -269,19 +277,6 @@ double calculate_forces_dihedral(struct Parameters *p_parameters, struct Vectors
 
 // This function calculates non-bonded forces between particles using the neighbor list.
 // The potential energy and forces are calculated using the Lennard-Jones potential.
-/*
- * This function computes the non-bonded interactions between particles
- * using the Lennard–Jones potential with an energy shift at the cutoff.
- * For each pair of neighbors from the neighbor list, the Lorentz–Berthelot
- * mixing rules are applied to obtain σ_ij and ε_ij. If the distance is 
- * smaller than the cutoff, the truncated and shifted Lennard–Jones potential 
- * is evaluated to accumulate the total potential energy, and the corresponding 
- * force vector is calculated as the negative gradient of the potential.
- * The force is then distributed to the two particles (equal and opposite)
- * according to Newton’s third law. In this way, the routine updates both
- * the forces and the non-bonded contribution to the energy of the system.
- */
-
 double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nbrlist, struct Vectors *p_vectors)
 {
     struct Vec3D df;
@@ -296,9 +291,6 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
     r_cutsq = p_parameters->r_cut * p_parameters->r_cut;
     double Epot = 0.0, Epot_cutoff;
 
-    // The energy shift (Epot_cutoff) will be calculated per pair using sigma_ij (Lorentz-Berthelot mixing rule).
-    // This is correct for mixtures, since each pair can have a different sigma.
-
     // Loop through the neighbor list and calculate the forces for each particle pair
     for (size_t k = 0; k < num_nbrs; k++)
     {
@@ -310,7 +302,7 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
         if (rij.sq < r_cutsq)
         {
             // Skip the LJ for bonded interactions
-            if ( (p_parameters->exclude_12_nb && is_connected_12(i,j,p_nbrlist)) || (p_parameters->exclude_13_nb && is_connected_13(i,j,p_nbrlist)) || (p_parameters->exclude_14_nb && is_connected_14(i,j,p_nbrlist)) )
+            if ((p_parameters->exclude_12_nb && is_connected_12(i,j,p_nbrlist)) || (p_parameters->exclude_13_nb && is_connected_13(i,j,p_nbrlist)) || (p_parameters->exclude_14_nb && is_connected_14(i,j,p_nbrlist)))
                 continue;
 
             // Lorentz-Berthelot mixing rules for sigma and epsilon
@@ -350,30 +342,5 @@ double calculate_forces_nb(struct Parameters *p_parameters, struct Nbrlist *p_nb
             f[j].z -= df.z;
         }
     }
-
     return Epot;  // Return the potential energy due to non-bonded interactions
 }
-
-/*
- * This routine computes BOTH the non-bonded potential energy and the forces:
- *
- * 1. Potential Energy:
- *    - For each neighbor pair (i,j) with distance < r_cut, the truncated and
- *      shifted Lennard–Jones potential is evaluated.
- *    - The contributions are accumulated into the variable Epot.
- *    - At the end, the function returns the total non-bonded potential energy.
- *
- * 2. Forces:
- *    - From the same potential, the force vector is obtained as the derivative
- *      with respect to the distance.
- *    - This vector is added to particle i and subtracted from particle j
- *      (Newton's third law: equal and opposite).
- *    - The result is stored in p_vectors->f, which contains the forces acting
- *      on all particles.
- *
- * In summary:
- * - The return cos_theta is the total non-bonded potential energy.
- * - The particle force vectors are updated as a side effect.
- */
-
- 

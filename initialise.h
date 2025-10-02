@@ -57,8 +57,8 @@ void initialise_velocities(struct Parameters *p_parameters, struct Vectors *p_ve
 /**
  * @brief Calculates the box length in Angstrom from density
  * 
- * @param Nmol 
- * @param p_vectors
+ * @param Nmol number of moles in the box
+ * @param rho_kg_m3 desired density of the system 
  */
 double box_length_from_density_A(size_t Nmol, double rho_kg_m3);
 

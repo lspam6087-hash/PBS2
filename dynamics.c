@@ -85,34 +85,13 @@ void boundary_conditions(struct Parameters *p_parameters, struct Vectors *p_vect
     }
 }
 
-
-/**
- * @brief Calculate the instantaneous temperature from the kinetic energy.
- *
- * This function converts the total kinetic energy of the system into an
- * instantaneous temperature using the equipartition theorem:
- *
- *     T = (2 * E_kin) / (kB * N_free)
- *
- * where:
- *   - E_kin  : total kinetic energy (input argument)
- *   - N_free : number of degrees of freedom = d * (N - 1)
- *              (d = 3 dimensions, subtract 3 to remove center-of-mass motion)
- *   - kB     : Boltzmann constant (set to 1 in reduced units)
- *
- * @param p_parameters struct containing the number of particles (num_part)
- * @param Ekin total kinetic energy of the system
- * @return Instantaneous temperature T_meas
- */
-
-
 // Calculate instantaneous temperature from kinetic energy LAURA B1
 double calc_temp(struct Parameters *p_parameters, double Ekin)
 {
     double N = p_parameters->num_part;     // number of particles
     double d = 3;                          // number of dimensions
     double N_free = d * (N - 1);           // degrees of freedom (subtract 3 for CM motion)
-    double T_meas = (2.0 * Ekin) / N_free; // T = 2E_kin / (kB * dof), here kB = 1
+    double T_meas = (2.0 * Ekin) / N_free; // measured temperature
     return T_meas;
 }
 

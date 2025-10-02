@@ -30,7 +30,7 @@ void initialise_bond_connectivity(struct Parameters *p_parameters, struct Vector
     int N = p_parameters->num_part;
     struct Bond *bonds = (struct Bond *)malloc(num_bonds * sizeof(struct Bond));
 
-    /// \todo (urgent) Specify bonds between particles, i.e., bonds[i].i and bonds[i].j for bonded particle pairs.
+    /// \todo Specify bonds between particles, i.e., bonds[i].i and bonds[i].j for bonded particle pairs.
     size_t x = 0;
     for (int n = 0; n < N; n++)
     {
@@ -256,13 +256,7 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
         build_molecule(p_parameters, molecule_center, p_vectors, 0);
         return;
     }
-
-    // Calculate lattice spacing based on particle number and box dimensions
-    //dl = pow(p_parameters->L.x * p_parameters->L.y * p_parameters->L.z / ((double)num_mol), 1.0 / 3.0);
-    //n.i = (int)ceil(p_parameters->L.x / dl);
-    //n.j = (int)ceil(p_parameters->L.y / dl);
-    //n.k = (int)ceil(p_parameters->L.z / dl);
-
+    
     n.i = (int) floor(p_parameters->L.x / 7.0);
     if (n.i < 1) 
         n.i = 1;

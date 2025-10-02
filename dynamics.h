@@ -40,19 +40,11 @@ void boundary_conditions(struct Parameters *p_parameters, struct Vectors *p_vect
 void thermostat(struct Parameters *p_parameters, struct Vectors *p_vectors, double Ekin, double T_meas);
 
 /**
- * @brief Calculate the instantaneous measured temperature from the kinetic energy.
- *
- * Converts the total kinetic energy into temperature using the equipartition theorem:
- * 
- *     T = (2 * Ekin) / (kB * dof)
- * 
- * where:
- *   - dof = 3 * (N - 1), i.e., subtracting 3 degrees of freedom for the center of mass.
- *   - kB = 1 in reduced units.
- *
- * @param[in] p_parameters pointer to Parameters struct (provides number of particles)
- * @param[in] Ekin total kinetic energy at this time step
- * @return Instantaneous temperature (double)
+ * @brief Calculate the instantaneous temperature from the kinetic energy.
+ 
+ * @param p_parameters struct containing the number of particles (num_part)
+ * @param Ekin total kinetic energy of the system
+ * @return Instantaneous temperature T_meas
  */
 double calc_temp(struct Parameters *p_parameters, double Ekin);
 
