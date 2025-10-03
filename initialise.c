@@ -238,7 +238,7 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
     struct Index3D n; // Number of grid cells along each axis
     double dl;        // Lattice spacing
     int imol = 0;     // Particle index
-    int imol = 0;     //molecule index
+    // int imole = 0;     //molecule index
 
     int num_mol = p_parameters->num_part / 4;
     double bondlength = r0 + 0.0;

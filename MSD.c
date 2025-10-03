@@ -12,7 +12,7 @@ struct Vec3D com_molecule(struct Parameters *p_parameters, struct Vectors *p_vec
     int molecule_index = 4 * imolecule;
     struct Vec3D com = v3(0.0, 0.0, 0.0);
     struct Vec3D *r = p_vectors->r;
-    int type = p_vectors->type;
+    int *type = p_vectors->type;
     double *mass = p_parameters->mass;
     double mtot = 0.0;
     
