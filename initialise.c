@@ -204,7 +204,7 @@ void initialise(struct Parameters *p_parameters, struct Vectors *p_vectors, stru
 // This function initializes particle positions on a cubic lattice.
 // Particles are placed in a grid with spacing based on the number of particles and the box dimensions.
 //Build a n-butane molecule with 4 particles in already the right geometry
-void build_molecule(struct Parameters *p_parameters, struct Vec3D molecule_center, struct Vectors *p_vectors, int ipart)
+void build_butane_molecule(struct Parameters *p_parameters, struct Vec3D molecule_center, struct Vectors *p_vectors, int ipart)
 {
     //place particle 1 (CH3)
     p_vectors->r[ipart].x = molecule_center.x - r0;
@@ -253,7 +253,7 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
         molecule_center.z = 0.5 * p_parameters->L.z;
 
         // place 4 atoms in a straight x-direction chain centred at box centre
-        build_molecule(p_parameters, molecule_center, p_vectors, 0);
+        build_butane_molecule(p_parameters, molecule_center, p_vectors, 0);
         return;
     }
     
@@ -287,7 +287,7 @@ void initialise_positions(struct Parameters *p_parameters, struct Vectors *p_vec
                 molecule_center.y = (j + 0.5) * dr.y;
                 molecule_center.z = (k + 0.5) * dr.z;
                 
-                build_molecule(p_parameters, molecule_center, p_vectors, ipart);
+                build_butane_molecule(p_parameters, molecule_center, p_vectors, ipart);
 
                 ipart += 4;
                 imol++;
@@ -345,6 +345,7 @@ void initialise_velocities(struct Parameters *p_parameters, struct Vectors *p_ve
     }
 }
 
+// This functions determines the box length from the desired density
 double box_length_from_density_A(size_t Nmol, double rho_kg_m3)
 {
     const double NA = 6.02214076e23; // 1/mol
@@ -355,8 +356,9 @@ double box_length_from_density_A(size_t Nmol, double rho_kg_m3)
     return L_m;
 }
 
+// This function initialized the bonds for one of the tests
 void initialise_bonds(struct Parameters *p, struct Vectors *v)
 {
-    struct Nbrlist dummy = (struct Nbrlist){0}; // NB off en el test
+    struct Nbrlist dummy = (struct Nbrlist){0}; 
     initialise_structure(p, v, &dummy);
 }

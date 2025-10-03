@@ -5,17 +5,19 @@
 #include "Vec3D.h"
 #include "MSD.h"
 
-//Calculate COM of a molecule
-struct Vec3D com_molecule(struct Parameters *p_parameters, struct Vectors *p_vectors, int molecule_number)
+//Calculate COM
+struct Vec3D com_molecule(struct Parameters *p_parameters, struct Vectors *p_vectors, int imolecule)
 {
-    struct Vec3D com = v3(0.0, 0.0, 0.0);
-    double mtot = 0.0;
     struct Vec3D L = p_parameters->L;
-    int molecule_index = 4 * molecule_number;
-
+    int molecule_index = 4 * imolecule;
+    struct Vec3D com = v3(0.0, 0.0, 0.0);
+    struct Vec3D *r = p_vectors->r;
+    double *mass = p_parameters->mass;
+    double mtot = 0.0;
+    
     //Look at first particle in molecule
-    struct Vec3D r0 = p_vectors->r[molecule_index];
-    double m0 = p_parameters->mass[p_vectors->type[molecule_index]];
+    struct Vec3D r0 = r[molecule_index];
+    double m0 = mass[p_vectors->type[molecule_index]];
     com = add(com, scl(m0, r0));
     mtot += m0;
 
@@ -24,7 +26,7 @@ struct Vec3D com_molecule(struct Parameters *p_parameters, struct Vectors *p_vec
     {
         int j = molecule_index + i;   
         int type = p_vectors->type[j];
-        double mass = p_parameters->mass[type];
+        double mass1 = mass[type];
 
         struct Vec3D rij;
         rij.x = p_vectors->r[j].x - r0.x;
@@ -36,10 +38,9 @@ struct Vec3D com_molecule(struct Parameters *p_parameters, struct Vectors *p_vec
 
         struct Vec3D rj = add(r0, rij);
 
-        com = add(com, scl(mass, rj));
-        mtot += mass;
+        com = add(com, scl(mass1, rj));
+        mtot += mass1;
     }
-
     return scl(1.0/mtot, com);
 }
 
