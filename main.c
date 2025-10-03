@@ -45,8 +45,7 @@
 
 // === (Un)comment the following commands to run different tests ===
 // #define RUN_TEST_NB          // test the non-bonded forces           
-// #define RUN_TEST_NVE         // test the NVE
-// #define RUN_TEST_NVT         // test the NVT
+#define RUN_TEST_NVT         // test the NVT
 // #define RUN_TEST_BONDED      // test the bonded forces
 // #define DIAGNOSTICS          // plot the diagnostics
 // #define HISTOGRAM            // determine velocities and plot them
@@ -185,20 +184,6 @@ int main(void)
 
         // Final velocity update (half-step)
         Ekin = update_velocities_half_dt(&parameters, &nbrlist, &vectors); 
-
-
-        #ifdef RUN_TEST_NVE
-            static int have_ref = 0;
-            static double Etot0 = 0.0;
-            double Etot = Epot + Ekin;
-            if (!have_ref) { Etot0 = Etot; have_ref = 1; }
-
-            if (step % 1000 == 0) {
-                double drift_rel = fabs(Etot - Etot0) / fmax(1.0, fabs(Etot0));
-                printf("[NVE] step %lu  Etot=%.8e  drift_rel=%.3e\n",
-                    (unsigned long)step, Etot, drift_rel);
-            }
-        #endif
         
         #ifdef MSD_CALC
             // Include the data for the histogram
